@@ -5,7 +5,7 @@ defmodule ElixirToAstGenerator do
   end
 
   def write_tla([title: ttl, extends: ex, constants: con, variables: var, type_ok: _t_o, init: ini, next: nxt, stutter: stt]) do
-    filename = Path.relative_to('generated_tla/specification.tla', Path.dirname(__DIR__))
+    filename = Path.relative_to('generated_tla/#{ttl}.tla', Path.dirname(__DIR__))
     tla_text = [
       "---- MODULE #{ttl} ----\n",
       concat_to_label("EXTENDS ", ex),
