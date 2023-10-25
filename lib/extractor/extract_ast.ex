@@ -1,4 +1,4 @@
-defmodule AstParser.Extractor.ExtractAst do
+defmodule ElixirToAstGenerator.Extractor.ExtractAst do
   def extract_ast(file_path) do
     file_path
     |> get_ast
@@ -24,7 +24,7 @@ defmodule AstParser.Extractor.ExtractAst do
 
 end
 
-# AstParser.Extractor.ExtractAst.extract_ast('C:\\Users\\tadas\\Desktop\\ElixirToTLA\\enum_functions.ex')
-# AstParser.Extractor.ExtractAst.extract_ast('C:\\Users\\tadas\\Desktop\\ElixirToTLA\\enum_functions_multi_line.ex')
-# AstParser.Extractor.ExtractAst.extract_ast('C:\\Users\\tadas\\Desktop\\ElixirToTLA\\enum_functions_no_line.ex')
+# ElixirToAstGenerator.Extractor.ExtractAst.extract_ast(Path.join([__DIR__, 'elixir_files/enum_functions.ex']))
+# ElixirToAstGenerator.Extractor.ExtractAst.extract_ast(Path.join([__DIR__, 'elixir_files/enum_functions_no_line.ex']))
+# ElixirToAstGenerator.Extractor.ExtractAst.extract_ast(Path.join([__DIR__, 'elixir_files/enum_functions_multi_line.ex']))
 # Application.put_env(:elixir, :ansi_enabled, true)
