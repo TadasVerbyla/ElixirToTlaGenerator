@@ -40,7 +40,7 @@ defmodule ElixirToAstGenerator do
   def get_function_info do
     [_function_name, ast] = ElixirToAstGenerator.Extractor.ExtractAst.extract_ast(Path.relative_to('elixir_files/enum_functions.ex', Path.dirname(__DIR__)))
     {:def, _, [{_function_name, _, _global_variables_ast}, do_ast]} = ast
-    [do: {{:., _, [{:__aliases__, _, [library]}, function]}, _, variable_ast}] = do_ast
-    [library, function, variable_ast]
+    [do: {{:., _, [{:__aliases__, _, [module]}, function]}, _, variable_ast}] = do_ast
+    [module, function, variable_ast]
   end
 end
