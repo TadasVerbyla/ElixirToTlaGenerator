@@ -1,10 +1,10 @@
-defmodule ElixirToAstGenerator.Extractor.ExtractAst do
+defmodule ElixirToTlaGenerator.Extractor.ExtractAst do
   def extract_ast(file_path) do
-    file_path
+    [function_name, function_ast] = file_path
     |> get_ast
     |> get_module_ast
     |> get_functions_ast
-    |> translate_functions_ast
+    [function_name, function_ast |> translate_functions_ast]
   end
 
   defp get_ast(file_path) do
@@ -19,8 +19,8 @@ defmodule ElixirToAstGenerator.Extractor.ExtractAst do
     body_ast
   end
 
-  defp get_functions_ast([{:@, _, [{:tlagen_function, _, [_function_name]}]} | functions]) do
-    functions
+  defp get_functions_ast([{:@, _, [{:tlagen_function, _, [function_name]}]} | functions]) do
+    [function_name, functions]
   end
 
   defp translate_functions_ast([]) do
@@ -45,7 +45,7 @@ defmodule ElixirToAstGenerator.Extractor.ExtractAst do
   end
 
   defp process_parameters([{parameter, _, initial_value} | []]) do
-    [parameter, initial_value]
+    [[parameter, initial_value]]
   end
 
   defp process_parameters([{parameter, _, initial_value} | rest]) do
@@ -86,7 +86,6 @@ defmodule ElixirToAstGenerator.Extractor.ExtractAst do
     []
   end
 
-
   defp process_do_block([expression_ast | []]) do
     expression = process_expression(expression_ast)
     expression
@@ -98,17 +97,19 @@ defmodule ElixirToAstGenerator.Extractor.ExtractAst do
   end
 
 
-
-  def process_expression([{operator_ast, _, nil}]) do
-    operator = process_expression(operator_ast)
-    [operator, nil]
-  end
-
   def process_expression({operator_ast, _, subexpressions_ast}) do
     operator = process_expression(operator_ast)
     subexpressions = process_expression(subexpressions_ast)
-    [operator, subexpressions]
+    [[operator, subexpressions]]
   end
+
+  def process_expression([{opperator_ast, _, subexpressions_ast} | rest]) do
+    operator = process_expression(opperator_ast)
+    subexpressions = process_expression(subexpressions_ast)
+    [[operator, subexpressions] | process_expression(rest)]
+  end
+
+
 
   def process_expression([expression_ast | []]) do
     expression = process_expression(expression_ast)
@@ -132,8 +133,12 @@ end
 # ElixirToAstGenerator.Extractor.ExtractAst.process_expression({:|, [line: 6],[{{:., [line: 6], [{:fun, [line: 6], nil}]}, [line: 6],[{:first, [line: 6], nil}]},{:map_range, [line: 6],[{:+, [line: 6], [{:first, [line: 6], nil}, {:step, [line: 6], nil}]},{:last, [line: 6], nil},{:step, [line: 6], nil},{:fun, [line: 6], nil}]}]})
 # ElixirToAstGenerator.Extractor.ExtractAst.process_expression([{:first, [line: 6], nil}])
 # ElixirToAstGenerator.Extractor.ExtractAst.process_expression({{:., [line: 6], [{:fun, [line: 6], nil}]}, [line: 6], [{:first, [line: 6], nil}]})
+# ElixirToAstGenerator.Extractor.ExtractAst.process_expression({:map_range, [line: 6],[{:+, [line: 6], [{:first, [line: 6], nil}, {:step, [line: 6], nil}]},{:last, [line: 6], nil},{:step, [line: 6], nil},{:fun, [line: 6], nil}]})
+# ElixirToAstGenerator.Extractor.ExtractAst.process_expression([{:+, [line: 6], [{:first, [line: 6], nil}, {:step, [line: 6], nil}]},{:last, [line: 6], nil},{:step, [line: 6], nil},{:fun, [line: 6], nil}])
+
 
 # ElixirToAstGenerator.Extractor.ExtractAst.extract_ast(Path.join([__DIR__, 'elixir_files/enum_functions.ex']))
 # ElixirToAstGenerator.Extractor.ExtractAst.extract_ast(Path.join([__DIR__, 'elixir_files/enum_functions_no_line.ex']))
 # ElixirToAstGenerator.Extractor.ExtractAst.extract_ast(Path.join([__DIR__, 'elixir_files/enum_functions_multi_line.ex']))
+
 # Application.put_env(:elixir, :ansi_enabled, true)

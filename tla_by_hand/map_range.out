@@ -1,0 +1,27 @@
+@!@!@STARTMSG 2262:0 @!@!@
+TLC2 Version 2.16 of 31 December 2020 (rev: cdddf55)
+@!@!@ENDMSG 2262 @!@!@
+@!@!@STARTMSG 2187:0 @!@!@
+Running breadth-first search Model-Checking with fp 33 and seed -921076475065821298 with 1 worker on 16 cores with 7147MB heap and 64MB offheap memory (Windows 10 10.0 amd64, Oracle Corporation 1.8.0_361 x86_64, MSBDiskFPSet, DiskStateQueue).
+@!@!@ENDMSG 2187 @!@!@
+@!@!@STARTMSG 2220:0 @!@!@
+Starting SANY...
+@!@!@ENDMSG 2220 @!@!@
+Parsing file C:\Users\tadas\Desktop\ElixirToTlaGenerator\tla_by_hand\map_range.tla
+Parsing file C:\Users\tadas\AppData\Local\Temp\Naturals.tla
+Parsing file C:\Users\tadas\AppData\Local\Temp\Sequences.tla
+Semantic processing of module Naturals
+Semantic processing of module Sequences
+Semantic processing of module map_range
+@!@!@STARTMSG 2219:0 @!@!@
+SANY finished.
+@!@!@ENDMSG 2219 @!@!@
+@!@!@STARTMSG 2185:0 @!@!@
+Starting... (2023-11-06 18:05:05)
+@!@!@ENDMSG 2185 @!@!@
+@!@!@STARTMSG 2222:1 @!@!@
+The constant parameter First is not assigned a value by the configuration file.
+@!@!@ENDMSG 2222 @!@!@
+@!@!@STARTMSG 2186:0 @!@!@
+Finished in 227ms at (2023-11-06 18:05:05)
+@!@!@ENDMSG 2186 @!@!@
