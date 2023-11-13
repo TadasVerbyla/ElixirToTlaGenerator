@@ -1,5 +1,5 @@
 ---- MODULE MapRange ----
-EXTENDS Naturals, Sequences
+EXTENDS Integers, Sequences
 CONSTANTS First, Last, Step, Fun
 VARIABLES first, last, step, fun, result
 Init ==

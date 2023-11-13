@@ -12,7 +12,7 @@ defmodule ElixirToTlaGenerator.Parser.SimplifiedAstToTla do
 
   defp find_extensions(ast) do
     atoms = extract_atoms(ast)
-    [check_naturals(atoms), check_sequences(atoms)]
+    [check_integers(atoms), check_sequences(atoms)]
 
 
   end
@@ -24,15 +24,16 @@ defmodule ElixirToTlaGenerator.Parser.SimplifiedAstToTla do
     end
   end
 
-  defp check_naturals(atoms) do
+  defp check_integers(atoms) do
     if  Enum.member?(atoms, :>) or
         Enum.member?(atoms, :<) or
         Enum.member?(atoms, :>=) or
         Enum.member?(atoms, :<=) or
         Enum.member?(atoms, :+) or
-        Enum.member?(atoms, :-)
+        Enum.member?(atoms, :-) or
+        Enum.member?(atoms, :*)
     do
-      "Naturals"
+      "Integers"
     end
   end
 
