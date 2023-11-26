@@ -1,0 +1,27 @@
+Values == 
+    {first + i * step : i \in Int}
+
+LengthInvariant ==
+    <>[]
+    (
+        \/  /\ Len(result) = (Last - First) / Step + 1
+            /\ Step > 0
+        \/  /\ Len(result) = ((First - Last) / (-1)) * Step + 1
+            /\ Step < 0
+    )
+    
+FirstInvariant ==
+    Head(result) = fun(First)
+
+OrderInvariant ==
+    \/  /\ Step > 0
+        /\ first < first'
+    \/  /\ Step < 0
+        /\ first > first'
+
+ResultIvariant ==
+    \A res \in result : \E val \in Values : fun[val] = res
+
+EdgeCaseInvariant == 
+    \/  /\ First = Last
+        /\ \A res \in result : fun[First] = res
