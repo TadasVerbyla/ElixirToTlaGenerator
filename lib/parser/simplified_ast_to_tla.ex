@@ -33,7 +33,7 @@ defmodule ElixirToTlaGenerator.Parser.SimplifiedAstToTla do
         Enum.member?(atoms, :-) or
         Enum.member?(atoms, :*)
     do
-      "Integers"
+      "Naturals"
     end
   end
 

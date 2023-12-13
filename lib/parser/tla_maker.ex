@@ -5,14 +5,16 @@ defmodule ElixirToTlaGenerator.Parser.TlaMaker do
     constants = Enum.map(variables, &ElixirToAstGenerator.StringUtils.SnakeToCamel.snake_to_camel/1)
     init = make_init(variables, constants)
     next = make_next(conditions, recursion, variables)
-    stutter = Enum.join(variables, ", ")
+    finished = make_finished(conditions, variables)
+    stutter = Enum.join(variables ++ ["result", "finished"], ", ")
     tla_text = [
       "---- MODULE #{title} ----\n",
       concat_to_label("EXTENDS ", extensions),
       concat_to_label("CONSTANTS ", constants),
-      concat_to_label("VARIABLES ", variables ++ ["result"]),
+      concat_to_label("VARIABLES ", variables ++ ["result", "finished"]),
       concat_to_definition("Init ==\n\t", init),
-      concat_to_definition("Next ==\n\t", next),
+      concat_to_definition2("Next ==\n\t\\/\n\t\t", next),
+      concat_to_definition2("\t\\/\n\t\t", finished),
       "Spec == Init /\\ [][Next]_<<#{stutter}>>",
       "\n\n===="
     ]
@@ -21,7 +23,7 @@ defmodule ElixirToTlaGenerator.Parser.TlaMaker do
   end
 
   defp make_init([var | []], [const | []]) do
-    ["/\\ #{var} = #{const}" | ["/\\ result = <<>>"]]
+    ["/\\ #{var} = #{const}" | ["/\\ result = <<>>", "/\\ finished = FALSE"]]
   end
 
   defp make_init([h_var | t_var], [h_const | t_const]) do
@@ -29,7 +31,18 @@ defmodule ElixirToTlaGenerator.Parser.TlaMaker do
   end
 
   defp make_next(conditions, [result, recursion], variables) do
-    ["/\\ ((#{Enum.join(make_and(conditions), ") \\/ (")}))", "/\\ #{result}" | make_recursion(recursion, variables)]
+    ["/\\ ((#{Enum.join(make_and(conditions), ") \\/ (")}))", "/\\ #{result}", "/\\ finished' = finished" | make_recursion(recursion, variables)]
+  end
+
+  defp make_finished(conditions, variables) do
+    ["/\\ (~(#{Enum.join(make_and(conditions), ") \\/ (")}))", "/\\ result' = result" , "/\\ finished' = TRUE" | make_finished_variables(variables)]
+  end
+
+  defp make_finished_variables([var | []]) do
+    ["/\\ #{var}' = #{var}"]
+  end
+  defp make_finished_variables([var | rest]) do
+    ["/\\ #{var}' = #{var}" | make_finished_variables(rest)]
   end
 
   defp make_and([and_block | []]) do
@@ -47,12 +60,14 @@ defmodule ElixirToTlaGenerator.Parser.TlaMaker do
     ["/\\ #{h_var}' = #{h_rec}" | make_recursion(t_rec, t_var)]
   end
 
-
   def concat_to_label(label, []), do: label <> "\n"
   def concat_to_label(label, [head | []]), do: concat_to_label(label <> head, [])
   def concat_to_label(label, [head | rest]), do: concat_to_label(label <> head <> ", ", rest)
 
   def concat_to_definition(definition, []), do: definition <> "\n"
   def concat_to_definition(definition, [head | rest]), do: concat_to_definition(definition <> head <> "\n\t",  rest)
+
+  def concat_to_definition2(definition, []), do: definition <> "\n"
+  def concat_to_definition2(definition, [head | rest]), do: concat_to_definition2(definition <> head <> "\n\t\t",  rest)
 
 end

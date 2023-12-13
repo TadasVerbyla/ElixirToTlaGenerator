@@ -9,12 +9,9 @@ Init == X!Init
 Next == X!Next
 Spec == Init /\ Next
 
-
-FirstInvariant == 
-    Head(result) = F[First]
-
-LengthInvariant ==
-    Len(result) = (Last - First) \div Step + 1
+value_by_index(i) == First + Step * (i - 1)
+OrderInvariant ==
+    \A res_index \in 1..Len(result): result[res_index] = F[value_by_index(res_index)]
 
 FirstValues == {First + i * Step : i \in 0..(Last - First) \div Step}
 ResultInvariant ==
@@ -24,7 +21,6 @@ ResultInvariant ==
 EndInvariant ==
     \/ finished = FALSE
     \/  /\ finished = TRUE
-        /\ FirstInvariant
-        /\ LengthInvariant
         /\ ResultInvariant
+        /\ OrderInvariant
 ====
