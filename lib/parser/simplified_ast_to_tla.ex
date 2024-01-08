@@ -63,7 +63,7 @@ defmodule ElixirToTlaGenerator.Parser.SimplifiedAstToTla do
   end
 
   defp parse_conditions([when_block | rest]) do
-    string_when = parse_when(when_block)
+    string_when =   parse_when(when_block)
     [string_when | parse_conditions(rest)]
   end
 

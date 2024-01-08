@@ -129,16 +129,3 @@ defmodule ElixirToTlaGenerator.Extractor.ExtractAst do
 
 
 end
-# ElixirToAstGenerator.Extractor.ExtractAst.process_expression([{{:., [line: 6], [{:fun, [line: 6], nil}]}, [line: 6],[{:first, [line: 6], nil}]},{:map_range, [line: 6],[{:+, [line: 6], [{:first, [line: 6], nil}, {:step, [line: 6], nil}]},{:last, [line: 6], nil},{:step, [line: 6], nil},{:fun, [line: 6], nil}]}])
-# ElixirToAstGenerator.Extractor.ExtractAst.process_expression({:|, [line: 6],[{{:., [line: 6], [{:fun, [line: 6], nil}]}, [line: 6],[{:first, [line: 6], nil}]},{:map_range, [line: 6],[{:+, [line: 6], [{:first, [line: 6], nil}, {:step, [line: 6], nil}]},{:last, [line: 6], nil},{:step, [line: 6], nil},{:fun, [line: 6], nil}]}]})
-# ElixirToAstGenerator.Extractor.ExtractAst.process_expression([{:first, [line: 6], nil}])
-# ElixirToAstGenerator.Extractor.ExtractAst.process_expression({{:., [line: 6], [{:fun, [line: 6], nil}]}, [line: 6], [{:first, [line: 6], nil}]})
-# ElixirToAstGenerator.Extractor.ExtractAst.process_expression({:map_range, [line: 6],[{:+, [line: 6], [{:first, [line: 6], nil}, {:step, [line: 6], nil}]},{:last, [line: 6], nil},{:step, [line: 6], nil},{:fun, [line: 6], nil}]})
-# ElixirToAstGenerator.Extractor.ExtractAst.process_expression([{:+, [line: 6], [{:first, [line: 6], nil}, {:step, [line: 6], nil}]},{:last, [line: 6], nil},{:step, [line: 6], nil},{:fun, [line: 6], nil}])
-
-
-# ElixirToAstGenerator.Extractor.ExtractAst.extract_ast(Path.join([__DIR__, 'elixir_files/enum_functions.ex']))
-# ElixirToAstGenerator.Extractor.ExtractAst.extract_ast(Path.join([__DIR__, 'elixir_files/enum_functions_no_line.ex']))
-# ElixirToAstGenerator.Extractor.ExtractAst.extract_ast(Path.join([__DIR__, 'elixir_files/enum_functions_multi_line.ex']))
-
-# Application.put_env(:elixir, :ansi_enabled, true)

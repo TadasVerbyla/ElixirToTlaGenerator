@@ -2,7 +2,7 @@
 TLC2 Version 2.16 of 31 December 2020 (rev: cdddf55)
 @!@!@ENDMSG 2262 @!@!@
 @!@!@STARTMSG 2187:0 @!@!@
-Running breadth-first search Model-Checking with fp 19 and seed -2593777473143321021 with 1 worker on 16 cores with 7147MB heap and 64MB offheap memory (Windows 10 10.0 amd64, Oracle Corporation 1.8.0_361 x86_64, MSBDiskFPSet, DiskStateQueue).
+Running breadth-first search Model-Checking with fp 121 and seed 6255027785855856701 with 1 worker on 16 cores with 7147MB heap and 64MB offheap memory (Windows 10 10.0 amd64, Oracle Corporation 1.8.0_361 x86_64, MSBDiskFPSet, DiskStateQueue).
 @!@!@ENDMSG 2187 @!@!@
 @!@!@STARTMSG 2220:0 @!@!@
 Starting SANY...
@@ -23,31 +23,19 @@ Semantic processing of module MapRangeMC
 SANY finished.
 @!@!@ENDMSG 2219 @!@!@
 @!@!@STARTMSG 2185:0 @!@!@
-Starting... (2023-12-13 15:59:35)
+Starting... (2023-12-13 19:59:25)
 @!@!@ENDMSG 2185 @!@!@
 @!@!@STARTMSG 2189:0 @!@!@
 Computing initial states...
 @!@!@ENDMSG 2189 @!@!@
 @!@!@STARTMSG 2190:0 @!@!@
-Finished computing initial states: 1 distinct state generated at 2023-12-13 15:59:35.
+Finished computing initial states: 1 distinct state generated at 2023-12-13 19:59:25.
 @!@!@ENDMSG 2190 @!@!@
 @!@!@STARTMSG 2776:0 @!@!@
-CostModel lookup failed for expression <line 6, col 12 to line 6, col 39 of module MapRangeMC>. Reporting costs into <line 16, col 45 to line 16, col 54 of module MapRange> instead (Safety and Liveness checking is unaffected. Please report a bug.)
+CostModel lookup failed for expression <line 6, col 12 to line 6, col 16 of module MapRangeMC>. Reporting costs into <line 16, col 45 to line 16, col 54 of module MapRange> instead (Safety and Liveness checking is unaffected. Please report a bug.)
 @!@!@ENDMSG 2776 @!@!@
 @!@!@STARTMSG 2776:0 @!@!@
-CostModel lookup failed for expression <line 6, col 15 to line 6, col 21 of module MapRangeMC>. Reporting costs into <line 16, col 45 to line 16, col 54 of module MapRange> instead (Safety and Liveness checking is unaffected. Please report a bug.)
-@!@!@ENDMSG 2776 @!@!@
-@!@!@STARTMSG 2776:0 @!@!@
-CostModel lookup failed for expression <line 6, col 15 to line 6, col 15 of module MapRangeMC>. Reporting costs into <line 16, col 45 to line 16, col 54 of module MapRange> instead (Safety and Liveness checking is unaffected. Please report a bug.)
-@!@!@ENDMSG 2776 @!@!@
-@!@!@STARTMSG 2776:0 @!@!@
-CostModel lookup failed for expression <line 6, col 19 to line 6, col 21 of module MapRangeMC>. Reporting costs into <line 16, col 45 to line 16, col 54 of module MapRange> instead (Safety and Liveness checking is unaffected. Please report a bug.)
-@!@!@ENDMSG 2776 @!@!@
-@!@!@STARTMSG 2776:0 @!@!@
-CostModel lookup failed for expression <line 6, col 28 to line 6, col 32 of module MapRangeMC>. Reporting costs into <line 16, col 45 to line 16, col 54 of module MapRange> instead (Safety and Liveness checking is unaffected. Please report a bug.)
-@!@!@ENDMSG 2776 @!@!@
-@!@!@STARTMSG 2776:0 @!@!@
-CostModel lookup failed for expression <line 6, col 28 to line 6, col 28 of module MapRangeMC>. Reporting costs into <line 16, col 45 to line 16, col 54 of module MapRange> instead (Safety and Liveness checking is unaffected. Please report a bug.)
+CostModel lookup failed for expression <line 6, col 12 to line 6, col 12 of module MapRangeMC>. Reporting costs into <line 16, col 45 to line 16, col 54 of module MapRange> instead (Safety and Liveness checking is unaffected. Please report a bug.)
 @!@!@ENDMSG 2776 @!@!@
 @!@!@STARTMSG 2193:0 @!@!@
 Model checking completed. No error has been found.
@@ -56,7 +44,7 @@ Model checking completed. No error has been found.
   calculated (optimistic):  val = 3.8E-19
 @!@!@ENDMSG 2193 @!@!@
 @!@!@STARTMSG 2201:0 @!@!@
-The coverage statistics at 2023-12-13 15:59:35
+The coverage statistics at 2023-12-13 19:59:25
 @!@!@ENDMSG 2201 @!@!@
 @!@!@STARTMSG 2773:0 @!@!@
 <Init line 8, col 1 to line 8, col 4 of module MapRangeMC>: 1:1
@@ -119,7 +107,7 @@ The coverage statistics at 2023-12-13 15:59:35
   ||line 16, col 37 to line 16, col 42 of module MapRange: 5
 @!@!@ENDMSG 2221 @!@!@
 @!@!@STARTMSG 2221:0 @!@!@
-  ||line 16, col 45 to line 16, col 54 of module MapRange: 35
+  ||line 16, col 45 to line 16, col 54 of module MapRange: 15
 @!@!@ENDMSG 2221 @!@!@
 @!@!@STARTMSG 2221:0 @!@!@
   |||line 16, col 49 to line 16, col 53 of module MapRange: 5
@@ -161,40 +149,40 @@ The coverage statistics at 2023-12-13 15:59:35
   line 28, col 20 to line 28, col 31 of module MapRange: 2
 @!@!@ENDMSG 2221 @!@!@
 @!@!@STARTMSG 2774:0 @!@!@
-<EndInvariant line 21, col 1 to line 21, col 12 of module MapRangeMC>
+<EndInvariant line 25, col 1 to line 25, col 12 of module MapRangeMC>
 @!@!@ENDMSG 2774 @!@!@
 @!@!@STARTMSG 2221:0 @!@!@
-  line 22, col 5 to line 25, col 25 of module MapRangeMC: 7
+  line 26, col 5 to line 29, col 25 of module MapRangeMC: 7
 @!@!@ENDMSG 2221 @!@!@
 @!@!@STARTMSG 2221:0 @!@!@
-  |line 22, col 8 to line 22, col 23 of module MapRangeMC: 7
+  |line 26, col 8 to line 26, col 23 of module MapRangeMC: 7
 @!@!@ENDMSG 2221 @!@!@
 @!@!@STARTMSG 2221:0 @!@!@
-  |line 23, col 9 to line 25, col 25 of module MapRangeMC: 1
+  |line 27, col 9 to line 29, col 25 of module MapRangeMC: 1
 @!@!@ENDMSG 2221 @!@!@
 @!@!@STARTMSG 2221:0 @!@!@
-  ||line 23, col 12 to line 23, col 26 of module MapRangeMC: 1
+  ||line 27, col 12 to line 27, col 26 of module MapRangeMC: 1
 @!@!@ENDMSG 2221 @!@!@
 @!@!@STARTMSG 2221:0 @!@!@
-  ||line 24, col 12 to line 24, col 26 of module MapRangeMC: 1
+  ||line 28, col 12 to line 28, col 26 of module MapRangeMC: 1
 @!@!@ENDMSG 2221 @!@!@
 @!@!@STARTMSG 2221:0 @!@!@
-  |||line 18, col 5 to line 19, col 62 of module MapRangeMC: 1
+  |||line 22, col 5 to line 23, col 71 of module MapRangeMC: 1
 @!@!@ENDMSG 2221 @!@!@
 @!@!@STARTMSG 2221:0 @!@!@
-  ||||line 19, col 9 to line 19, col 62 of module MapRangeMC: 5
+  ||||line 23, col 9 to line 23, col 71 of module MapRangeMC: 5
 @!@!@ENDMSG 2221 @!@!@
 @!@!@STARTMSG 2221:0 @!@!@
-  |||||line 19, col 34 to line 19, col 62 of module MapRangeMC: 15
+  |||||line 23, col 43 to line 23, col 71 of module MapRangeMC: 15
 @!@!@ENDMSG 2221 @!@!@
 @!@!@STARTMSG 2221:0 @!@!@
-  |||||line 19, col 20 to line 19, col 30 of module MapRangeMC: 5
+  |||||line 23, col 26 to line 23, col 39 of module MapRangeMC: 5
 @!@!@ENDMSG 2221 @!@!@
 @!@!@STARTMSG 2221:0 @!@!@
-  ||||line 18, col 22 to line 18, col 35 of module MapRangeMC: 1
+  ||||line 22, col 16 to line 22, col 26 of module MapRangeMC: 1
 @!@!@ENDMSG 2221 @!@!@
 @!@!@STARTMSG 2221:0 @!@!@
-  ||line 25, col 12 to line 25, col 25 of module MapRangeMC: 1
+  ||line 29, col 12 to line 29, col 25 of module MapRangeMC: 1
 @!@!@ENDMSG 2221 @!@!@
 @!@!@STARTMSG 2221:0 @!@!@
   |||line 14, col 5 to line 14, col 88 of module MapRangeMC: 1
@@ -209,7 +197,7 @@ The coverage statistics at 2023-12-13 15:59:35
 End of statistics.
 @!@!@ENDMSG 2202 @!@!@
 @!@!@STARTMSG 2200:0 @!@!@
-Progress(7) at 2023-12-13 15:59:35: 8 states generated (1,142 s/min), 7 distinct states found (1,000 ds/min), 0 states left on queue.
+Progress(7) at 2023-12-13 19:59:25: 8 states generated (1,140 s/min), 7 distinct states found (997 ds/min), 0 states left on queue.
 @!@!@ENDMSG 2200 @!@!@
 @!@!@STARTMSG 2199:0 @!@!@
 8 states generated, 7 distinct states found, 0 states left on queue.
@@ -221,5 +209,5 @@ The depth of the complete state graph search is 7.
 The average outdegree of the complete state graph is 1 (minimum is 0, the maximum 1 and the 95th percentile is 1).
 @!@!@ENDMSG 2268 @!@!@
 @!@!@STARTMSG 2186:0 @!@!@
-Finished in 422ms at (2023-12-13 15:59:35)
+Finished in 423ms at (2023-12-13 19:59:25)
 @!@!@ENDMSG 2186 @!@!@
