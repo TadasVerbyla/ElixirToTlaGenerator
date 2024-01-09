@@ -1,12 +1,11 @@
 ---- MODULE MapRange ----
 EXTENDS Naturals, Sequences
-CONSTANTS First, Last, Step, Fun
-VARIABLES first, last, step, fun, result, finished
+CONSTANTS First, Last, Step, fun
+VARIABLES first, last, step, result, finished
 Init ==
 	/\ first = First
 	/\ last = Last
 	/\ step = Step
-	/\ fun = Fun
 	/\ result = <<>>
 	/\ finished = FALSE
 	
@@ -18,7 +17,6 @@ Next ==
 		/\ first' = first+step
 		/\ last' = last
 		/\ step' = step
-		/\ fun' = fun
 		
 	\/
 		/\ (~(step > 0 /\ first <= last) \/ (step < 0 /\ first >= last))
@@ -27,8 +25,7 @@ Next ==
 		/\ first' = first
 		/\ last' = last
 		/\ step' = step
-		/\ fun' = fun
 		
-Spec == Init /\ [][Next]_<<first, last, step, fun, result, finished>>
+Spec == Init /\ [][Next]_<<first, last, step, result, finished>>
 
 ====

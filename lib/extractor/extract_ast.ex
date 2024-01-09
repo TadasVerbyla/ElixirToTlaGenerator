@@ -125,7 +125,4 @@ defmodule ElixirToTlaGenerator.Extractor.ExtractAst do
     atom
   end
 
-
-
-
 end

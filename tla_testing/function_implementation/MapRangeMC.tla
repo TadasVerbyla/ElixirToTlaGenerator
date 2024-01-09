@@ -15,8 +15,8 @@ OrderInvariant ==
 
 FirstValues == {First + i * Step : i \in 0..(Last - First) \div Step}
 ResultInvariant ==
-    \A res_index \in 1..Len(result) :
-        \E val \in FirstValues : result[res_index] = F[val]
+    \A val \in FirstValues :
+        \E res_index \in 1..Len(result) : result[res_index] = F[val]
 
 EndInvariant ==
     \/ finished = FALSE

@@ -5,3 +5,5 @@ defmodule ElixirToTlaGenerator do
     ElixirToTlaGenerator.Parser.TlaMaker.make_tla_file
   end
 end
+
+# ElixirToTlaGenerator.generate('c:/Users/tadas/Desktop/ElixirToTlaGenerator/elixir_files/map_range.ex')

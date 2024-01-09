@@ -2,7 +2,6 @@
 EXTENDS Naturals, Sequences
 CONSTANTS First, Last, Step, fun(_)
 VARIABLES first, last, step, result, finished
-ASSUME Step # 0
 Init ==
 	/\ first = First
 	/\ last = Last

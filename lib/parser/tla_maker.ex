@@ -1,17 +1,21 @@
 defmodule ElixirToTlaGenerator.Parser.TlaMaker do
-  def make_tla_file([function_name, extensions, variables, conditions, recursion]) do
+  def make_tla_file([function_name, extensions, fun_variables, basic_variables, conditions, recursion]) do
     title = ElixirToAstGenerator.StringUtils.SnakeToCamel.snake_to_camel(function_name)
     filename = Path.relative_to('generated_tla/#{title}.tla', Path.dirname(__DIR__))
-    constants = Enum.map(variables, &ElixirToAstGenerator.StringUtils.SnakeToCamel.snake_to_camel/1)
-    init = make_init(variables, constants)
-    next = make_next(conditions, recursion, variables)
-    finished = make_finished(conditions, variables)
-    stutter = Enum.join(variables ++ ["result", "finished"], ", ")
+    constants = Enum.map(basic_variables, &ElixirToAstGenerator.StringUtils.SnakeToCamel.snake_to_camel/1)
+    init = make_init(basic_variables, constants)
+    [result, recursion_body] = recursion
+    recursion_body = Enum.reject(recursion_body, fn string ->
+      String.starts_with?(string, "fun")
+    end)
+    next = make_next(conditions, [result, recursion_body], basic_variables)
+    finished = make_finished(conditions, basic_variables)
+    stutter = Enum.join(basic_variables ++ ["result", "finished"], ", ")
     tla_text = [
       "---- MODULE #{title} ----\n",
       concat_to_label("EXTENDS ", extensions),
-      concat_to_label("CONSTANTS ", constants),
-      concat_to_label("VARIABLES ", variables ++ ["result", "finished"]),
+      concat_to_label("CONSTANTS ", constants ++ fun_variables),
+      concat_to_label("VARIABLES ", basic_variables ++ ["result", "finished"]),
       concat_to_definition("Init ==\n\t", init),
       concat_to_definition2("Next ==\n\t\\/\n\t\t", next),
       concat_to_definition2("\t\\/\n\t\t", finished),

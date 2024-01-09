@@ -5,16 +5,17 @@ defmodule ElixirToTlaGenerator.Parser.SimplifiedAstToTla do
     tla_extensions = find_extensions(simple_ast)
     tla_from_name = Atom.to_string(function_name)
     tla_from_variables = parse_variables(variables)
+    {tla_from_function_variables, tla_from_basic_variables} = Enum.split_with(
+      tla_from_variables, fn string -> String.starts_with?(string, "fun")
+    end)
     tla_from_conditions = parse_conditions(conditions)
     tla_from_body = parse_body(body, function_name)
-    [tla_from_name, tla_extensions, tla_from_variables, tla_from_conditions, tla_from_body]
+    [tla_from_name, tla_extensions, tla_from_function_variables, tla_from_basic_variables, tla_from_conditions, tla_from_body]
   end
 
   defp find_extensions(ast) do
     atoms = extract_atoms(ast)
     [check_integers(atoms), check_sequences(atoms)]
-
-
   end
 
   defp check_sequences(atoms) do
