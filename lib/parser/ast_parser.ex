@@ -83,9 +83,39 @@ defmodule ElixirToTlaGenerator.Parser.AstParser do
   end
 
 
+  @spec flatten_expression(number() | binary(), number(), list(any())) :: {number() | atom() | binary(), number(), list(any())}
+  def flatten_expression(constant, fn_counter, functions) when is_number(constant) or is_binary(constant) do
+    {constant, fn_counter, functions}
+  end
 
+  @spec flatten_expression({atom(), any()}, number(), list(any())) :: {list(atom()), number(), list(any())}
+  def flatten_expression([atom, nil], fn_counter, functions) do
+    {[atom, nil], fn_counter, functions}
+  end
 
-  def flatten_expresion([operator, parameters]) do
+  @spec flatten_expression({atom(), list(any())}, number(), list(any())) :: {list(any()), number(), list(any())}
+  def flatten_expression([atom, parameters], fn_counter, functions) do
 
+    f = fn(parameter, {acc_parameters, acc_counter, acc_functions}) ->
+      {flattened_parameter, new_fn_counter, new_functions} = flatten_expression(parameter, acc_counter, acc_functions)
+      {[flattened_parameter] ++ acc_parameters, new_fn_counter, new_functions}
+    end
+
+    {new_parameters, new_counter, new_functions} = Enum.reduce(
+      parameters,
+      {[], fn_counter, functions},
+      f)
+
+    function_parameters = Enum.reverse(new_parameters)
+    function = {new_counter, [atom, function_parameters]}
+    function_id = {:fn_nr, new_counter}
+
+    {function_id, new_counter + 1, new_functions ++ [function]}
+  end
+
+  @spec flatten_expression_wrapper(list(any()), number(), list(any())) :: list(any())
+  def flatten_expression_wrapper(ast, fn_counter, functions) do
+    {_, _, result} = flatten_expression(ast, fn_counter, functions)
+    result
   end
 end
