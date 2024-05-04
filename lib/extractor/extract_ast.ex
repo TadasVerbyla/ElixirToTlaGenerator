@@ -33,15 +33,30 @@ defmodule ElixirToTlaGenerator.Extractor.ExtractAst do
     [[header_tla, do_tla] | translate_functions_ast(rest)]
   end
 
-  defp process_header({:when, _, [{_function_name, _, parameter_block}, {:when, _, conditional_block}]}) do
+  defp process_header({:when, _, [{function_name, _, parameter_block}, {:when, _, conditional_block}]}) do
     parameters = process_parameters(parameter_block)
     conditions = process_conditions(conditional_block)
-    [parameters, conditions]
+    [function_name, [parameters, conditions]]
   end
 
-  defp process_header({_function_name, _, parameter_block}) do
+  defp process_header({:when, _, [{function_name, _, parameter_block}, {:and, _, and_ast}]}) do
     parameters = process_parameters(parameter_block)
-    parameters
+    conditions = process_and(and_ast)
+    [function_name, [parameters, conditions]]
+  end
+
+  defp process_header({:when, _, [{function_name, _, parameter_block}, {operator, _, [var1, var2]}]}) do
+    parameters = process_parameters(parameter_block)
+    val1 = simplify_var(var1)
+    val2 = simplify_var(var2)
+    [[operator, val1, val2]]
+    conditions = [[[operator, val1, val2]]]
+    [function_name, [parameters, conditions]]
+  end
+
+  defp process_header({function_name, _, parameter_block}) do
+    parameters = process_parameters(parameter_block)
+    [function_name, parameters]
   end
 
   defp process_parameters([{parameter, _, initial_value} | []]) do
@@ -86,6 +101,10 @@ defmodule ElixirToTlaGenerator.Extractor.ExtractAst do
     []
   end
 
+  defp process_do_block({operator_ast, _, subexpressions_ast}) do
+    process_expression({operator_ast, "blank", subexpressions_ast})
+  end
+
   defp process_do_block([expression_ast | []]) do
     expression = process_expression(expression_ast)
     expression
@@ -97,13 +116,13 @@ defmodule ElixirToTlaGenerator.Extractor.ExtractAst do
   end
 
 
-  def process_expression({operator_ast, _, subexpressions_ast}) do
+  defp process_expression({operator_ast, _, subexpressions_ast}) do
     operator = process_expression(operator_ast)
     subexpressions = process_expression(subexpressions_ast)
     [[operator, subexpressions]]
   end
 
-  def process_expression([{opperator_ast, _, subexpressions_ast} | rest]) do
+  defp process_expression([{opperator_ast, _, subexpressions_ast} | rest]) do
     operator = process_expression(opperator_ast)
     subexpressions = process_expression(subexpressions_ast)
     [[operator, subexpressions] | process_expression(rest)]
@@ -111,17 +130,17 @@ defmodule ElixirToTlaGenerator.Extractor.ExtractAst do
 
 
 
-  def process_expression([expression_ast | []]) do
+  defp process_expression([expression_ast | []]) do
     expression = process_expression(expression_ast)
     [expression]
   end
 
-  def process_expression([expression_ast | rest]) do
+  defp process_expression([expression_ast | rest]) do
     expression = process_expression(expression_ast)
     [expression, process_expression(rest)]
   end
 
-  def process_expression(atom) do
+  defp process_expression(atom) do
     atom
   end
 
