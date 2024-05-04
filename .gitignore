@@ -24,3 +24,4 @@ ast_parser-*.tar
 
 # Temporary files, for example, from tests.
 /tmp/
+*.out
