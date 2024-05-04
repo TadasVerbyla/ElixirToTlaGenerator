@@ -5,30 +5,24 @@ defmodule FlattenTest do
 
 
   test "flatten_constant_integer" do
-    assert ElixirToTlaGenerator.Parser.AstParser.flatten_expression(
+    assert ElixirToTlaGenerator.Parser.AstParser.flatten_expression_wrapper(
       # 1
-      (quote do: 1),
-      0,
-      []
-    ) == {1, 0, []}
+      (quote do: 1)
+    ) == [{0, 1}]
   end
 
   test "flatten_constant_string" do
-    assert ElixirToTlaGenerator.Parser.AstParser.flatten_expression(
+    assert ElixirToTlaGenerator.Parser.AstParser.flatten_expression_wrapper(
       # string
-      (quote do: "string"),
-      0,
-      []
-    ) == {"string", 0, []}
+      (quote do: "string")
+    ) == [{0, "string"}]
   end
 
   test "flatten_variable" do
-    assert ElixirToTlaGenerator.Parser.AstParser.flatten_expression(
+    assert ElixirToTlaGenerator.Parser.AstParser.flatten_expression_wrapper(
       # n
-      [:n, nil],
-      0,
-      []
-    ) == {[:n, nil], 0, []}
+      [:n, nil]
+    ) == [{0, [:n, nil]}]
   end
 
   test "flatten_single_expression" do
@@ -47,9 +41,7 @@ defmodule FlattenTest do
   test "flatten_double_expression" do
     assert ElixirToTlaGenerator.Parser.AstParser.flatten_expression_wrapper(
       # fib(n - 1)
-      [:fib, [[:-, [[:n, nil], 1]]]],
-      0,
-      []
+      [:fib, [[:-, [[:n, nil], 1]]]]
     ) ==  [
             {0, [:-, [[:n, nil], 1]]},
             {1, [:fib, [{:fn_nr, 0}]]}
@@ -61,9 +53,7 @@ defmodule FlattenTest do
   test "flatten_full" do
     assert ElixirToTlaGenerator.Parser.AstParser.flatten_expression_wrapper(
       # fib(n - 1) + fib(n - 2)
-      [:+, [[:fib, [[:-, [[:n, nil], 1]]]], [:fib, [[:-, [[:n, nil], 2]]]]]],
-      0,
-      []
+      [:+, [[:fib, [[:-, [[:n, nil], 1]]]], [:fib, [[:-, [[:n, nil], 2]]]]]]
     ) ==  [
             {0, [:-, [[:n, nil], 1]]},
             {1, [:fib, [{:fn_nr, 0}]]},

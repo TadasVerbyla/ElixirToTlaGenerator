@@ -11,8 +11,14 @@ defmodule ElixirToTlaGenerator.Parser.AstParser do
     full_guards = add_guard_negation(guards)
     unique_clause_names = Enum.uniq(clause_names)
 
-    expresions = get_expresions(clauses)
-    expresions
+    clause_expressions = get_expressions(clauses)
+    flattened_clause_expressions = Enum.map(clause_expressions, fn clause ->
+      flatten_expression_wrapper(Enum.at(clause, 0))
+    end)
+    function_groups = Enum.map(flattened_clause_expressions, fn flattened_clause ->
+      group_flattened_wrapper(flattened_clause, unique_clause_names)
+    end)
+    [unique_paramteres, full_guards, function_groups]
   end
 
   def get_headers([[header, _body] | []]) do
@@ -74,13 +80,15 @@ defmodule ElixirToTlaGenerator.Parser.AstParser do
   end
 
 
-  def get_expresions([[_header, body] | []]) do
+  def get_expressions([[_header, body] | []]) do
     [body]
   end
 
-  def get_expresions([[_header, body] | rest]) do
-    [body | get_expresions(rest)]
+  def get_expressions([[_header, body] | rest]) do
+    [body | get_expressions(rest)]
   end
+
+
 
 
   @spec flatten_expression(number() | binary(), number(), list(any())) :: {number() | atom() | binary(), number(), list(any())}
@@ -91,6 +99,14 @@ defmodule ElixirToTlaGenerator.Parser.AstParser do
   @spec flatten_expression({atom(), any()}, number(), list(any())) :: {list(atom()), number(), list(any())}
   def flatten_expression([atom, nil], fn_counter, functions) do
     {[atom, nil], fn_counter, functions}
+  end
+
+  def flatten_expression(constant, 0, functions) when is_number(constant) or is_binary(constant) do
+    {constant, 0, functions ++ [{0, constant}]}
+  end
+
+  def flatten_expression([atom, nil], 0, functions) do
+    {[atom, nil], 0, functions ++ [{0, [atom, nil]}]}
   end
 
   @spec flatten_expression({atom(), list(any())}, number(), list(any())) :: {list(any()), number(), list(any())}
@@ -113,9 +129,37 @@ defmodule ElixirToTlaGenerator.Parser.AstParser do
     {function_id, new_counter + 1, new_functions ++ [function]}
   end
 
-  @spec flatten_expression_wrapper(list(any()), number(), list(any())) :: list(any())
-  def flatten_expression_wrapper(ast, fn_counter, functions) do
-    {_, _, result} = flatten_expression(ast, fn_counter, functions)
-    result
+  @spec flatten_expression_wrapper(list(any())) :: list(any())
+  def flatten_expression_wrapper(expressions) do
+    {last_func, _, result} = flatten_expression(expressions, 0, [])
+    case length(result) == 0 do
+      true ->
+        [{0, last_func}]
+      false ->
+        result
+    end
   end
+
+  def group_flattened([], _recursive_operators, _groups, _current_group) do
+    []
+  end
+
+  def group_flattened([function], _recursive_operators, groups, current_group) do
+    groups ++ [current_group ++ [function]]
+  end
+
+  def group_flattened([function | rest], recursive_operators, groups, current_group) do
+    {_, [operator, _]} = function
+    case Enum.member?(recursive_operators, operator) do
+      true ->
+        group_flattened(rest, recursive_operators, groups ++ [current_group ++ [function]], [])
+      false ->
+        group_flattened(rest, recursive_operators, groups, current_group ++ [function])
+    end
+  end
+
+  def group_flattened_wrapper(flattened, recursive_operators) do
+    group_flattened(flattened, recursive_operators, [], [])
+  end
+
 end
