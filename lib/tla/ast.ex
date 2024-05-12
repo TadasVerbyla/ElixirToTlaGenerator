@@ -1,5 +1,4 @@
 defmodule Tla.Ast do
-
   defmodule Constant do
     @type t() :: %__MODULE__{name: String.t()}
     defstruct name: String
@@ -29,8 +28,8 @@ defmodule Tla.Ast do
             | {:concat, t(), t()}
             | {:assign, t(), t()}
             | {:=, t(), t()}
-            | {:and_block, t(), t()}
-            | {:or_block, t(), t()}
+            | {:and, t(), t()}
+            | {:or, t(), t()}
             | {:block, t(), t()}
             | {:always, t(), t()}
             | {:stutter, t(), t()}
@@ -66,7 +65,7 @@ defmodule Tla.Ast do
         ["---- MODULE ", m.name, " ----"]
       ]),
       with_eol([
-        ["EXTENDS "] ++ m.extends
+        ["EXTENDS "] ++ (m.extends |> insert_symbol_wrapper(","))
       ]),
       Enum.map(m.constants, &to_tla/1),
       Enum.map(m.variables, &to_tla/1),
@@ -102,28 +101,33 @@ defmodule Tla.Ast do
     ])
   end
 
-
-  def insert_commas_wrapper(list) do
-    IO.inspect(list)
-    insert_commas(list, [])
+  def insert_symbol_wrapper(list, symbol) do
+    insert_symbol(list, symbol, [])
   end
-  defp insert_commas([string], result) do
+
+  defp insert_symbol([string], _symbol, result) do
     result ++ [string]
   end
-  defp insert_commas([string | rest], result) do
-    insert_commas(rest, result ++ [string] ++ [","])
-  end
 
+  defp insert_symbol([string | rest], symbol, result) do
+    insert_symbol(rest, symbol, result ++ [string] ++ [symbol])
+  end
 
   defp to_tla_expr(value) when is_number(value) or is_binary(value), do: value
   defp to_tla_expr(%Constant{name: name}), do: [name]
   defp to_tla_expr(%Variable{name: name}), do: [name]
   defp to_tla_expr(%LocalVariable{name: name}), do: [name]
   defp to_tla_expr(%Operator{name: name, parameters: [], expression: nil}), do: [name]
-  defp to_tla_expr(%Operator{name: name, parameters: parameters, expression: nil}), do: [name, "(", Enum.map(parameters, &to_tla_expr/1), ")"]
 
-  defp to_tla_expr({:set, e}), do: ["<<", Enum.map(e, &to_tla_expr/1) |> insert_commas_wrapper, ">>"]
-  defp to_tla_expr({:arr, e}), do: ["[", Enum.map(e, &to_tla_expr/1) |> insert_commas_wrapper, "]"]
+  defp to_tla_expr(%Operator{name: name, parameters: parameters, expression: nil}),
+    do: [name, "(", Enum.map(parameters, &to_tla_expr/1), ")"]
+
+  defp to_tla_expr({:set, e}),
+    do: ["<<", Enum.map(e, &to_tla_expr/1) |> insert_symbol_wrapper(","), ">>"]
+
+  defp to_tla_expr({:arr, e}),
+    do: ["[", Enum.map(e, &to_tla_expr/1) |> insert_symbol_wrapper(","), "]"]
+
   defp to_tla_expr({:par, e}), do: ["(", Enum.map(e, &to_tla_expr/1), ")"]
   defp to_tla_expr({:not, e}), do: ["~", to_tla_expr(e)]
   defp to_tla_expr({:next, e}), do: [to_tla_expr(e), "'"]
@@ -132,8 +136,6 @@ defmodule Tla.Ast do
   defp to_tla_expr({:index, e1, e2}), do: [to_tla_expr(e1), "[", to_tla_expr(e2), "]"]
 
   defp to_tla_expr({:always, e}), do: ["[][", to_tla_expr(e), "]"]
-  defp to_tla_expr({:and, e1, e2}), do: [to_tla_expr(e1), " /\\ ", to_tla_expr(e2)]
-  defp to_tla_expr({:or, e1, e2}), do: [to_tla_expr(e1), " \\/ ", to_tla_expr(e2)]
   defp to_tla_expr({:cap, e1, e2}), do: [to_tla_expr(e1), " \\cap ", to_tla_expr(e2)]
   defp to_tla_expr({:concat, e1, e2}), do: [to_tla_expr(e1), " \\o ", to_tla_expr(e2)]
   defp to_tla_expr({:assign, e1, e2}), do: [to_tla_expr(e1), " |-> ", to_tla_expr(e2)]
@@ -142,21 +144,34 @@ defmodule Tla.Ast do
   defp to_tla_expr({:+, e1, e2}), do: [to_tla_expr(e1), " + ", to_tla_expr(e2)]
 
   defp to_tla_expr({:stutter, e1, e2}), do: [to_tla_expr(e1), "_", to_tla_expr(e2)]
-  defp to_tla_expr({:and_block, e}), do: ["/\\ ", to_tla_expr(e), "\n"]
-  defp to_tla_expr({:or_block, e}), do: ["\\/ ", to_tla_expr(e), "\n"]
-  defp to_tla_expr({:block, e}), do: ["\n", Enum.map(e, &to_tla_expr/1) |> Enum.map(fn x -> ["\t" | x] end), "\n"]
 
-  defp to_tla_expr({:except, e1, e2}), do: ["[", to_tla_expr(e1), " EXCEPT ", Enum.map(e2, &to_tla_expr/1) |> insert_commas_wrapper, "]"]
+  defp to_tla_expr({:and, e}),
+    do: ["(", Enum.map(e, &to_tla_expr/1) |> insert_symbol_wrapper(") /\\ ("), ")"]
+
+  defp to_tla_expr({:or, e}),
+    do: ["(", Enum.map(e, &to_tla_expr/1) |> insert_symbol_wrapper(") \\/ ("), ")"]
+
+  defp to_tla_expr({:block, e}),
+    do: ["\n", Enum.map(e, &to_tla_expr/1) |> Enum.map(fn x -> ["\t" | x] end), "\n"]
+
+  defp to_tla_expr({:except, e1, e2}),
+    do: [
+      "[",
+      to_tla_expr(e1),
+      " EXCEPT ",
+      Enum.map(e2, &to_tla_expr/1) |> insert_symbol_wrapper(","),
+      "]"
+    ]
+
   defp to_tla_expr({:exception, {}, e2}), do: ["!", ".", to_tla_expr(e2)]
   defp to_tla_expr({:exception, e1, e2}), do: ["![", to_tla_expr(e1), "].", to_tla_expr(e2)]
-
-
 
   defp indent_lines(lines, indent), do: Enum.map(lines, &[indent, &1])
   defp with_eol(lines), do: Enum.map(lines, &[&1, "\n"])
 
   def example() do
     # Pavyzdinis modulis, demonstruojantis visus TLA+ AST elementus, kurie yra implementuoti.
+    # IO.chardata_to_string(Tla.Ast.example)
     m = %Tla.Ast.Module{
       name: "Fib",
       extends: ["Naturals", "Integers", "TLC", "Sequences"],
@@ -165,109 +180,98 @@ defmodule Tla.Ast do
       operators: [
         %Tla.Ast.Operator{
           name: "Init",
-          expression: {
-            :block, [
-              {:and_block,
-              {:=, %Tla.Ast.LocalVariable{name: "stack"}, {
-                  :set, [{:arr, [
-                    {:assign, %Tla.Ast.LocalVariable{name: "n"}, %Tla.Ast.Constant{name: "N"}},
-                    {:assign, %Tla.Ast.LocalVariable{name: "res_case_1"}, {:set, ["-1"]}},
-                    {:assign, %Tla.Ast.LocalVariable{name: "res_case_2"}, {:set, ["-1", "-1", "-1"]}},
-                    {:assign, %Tla.Ast.LocalVariable{name: "case_counter"}, "1"},
-                    {:assign, %Tla.Ast.LocalVariable{name: "block_counter"}, "1"},
-                  ]}]
-                }
-              }},
-              {:and_block,
-              {:=, %Tla.Ast.LocalVariable{name: "return"}, "-1"}}
-            ]
-          }
+          expression:
+            {:and,
+             [
+               {:=, %Tla.Ast.LocalVariable{name: "stack"},
+                {
+                  :set,
+                  [
+                    {:arr,
+                     [
+                       {:assign, %Tla.Ast.LocalVariable{name: "n"}, %Tla.Ast.Constant{name: "N"}},
+                       {:assign, %Tla.Ast.LocalVariable{name: "res_case_1"}, {:set, ["-1"]}},
+                       {:assign, %Tla.Ast.LocalVariable{name: "res_case_2"},
+                        {:set, ["-1", "-1", "-1"]}},
+                       {:assign, %Tla.Ast.LocalVariable{name: "case_counter"}, "1"},
+                       {:assign, %Tla.Ast.LocalVariable{name: "block_counter"}, "1"}
+                     ]}
+                  ]
+                }},
+               {:=, %Tla.Ast.LocalVariable{name: "return"}, "-1"}
+             ]}
         },
         %Tla.Ast.Operator{
           name: "AppendToStart",
           parameters: ["item", "list"],
-          expression: {:concat, {:set, [%Tla.Ast.LocalVariable{name: "item"}]}, %Tla.Ast.LocalVariable{name: "list"}}
+          expression:
+            {:concat, {:set, [%Tla.Ast.LocalVariable{name: "item"}]},
+             %Tla.Ast.LocalVariable{name: "list"}}
         },
         %Tla.Ast.Operator{
           name: "Next",
-          expression: {
-            :block, [
-              {:and_block, {:par, [
-                {:or_block,
+          expression:
+            {:or,
+             [
+               {:and,
+                [
                   {:=,
-                    {:access,
-                      {
-                        :index, %Tla.Ast.Variable{name: "stack"}, "1"}, %Tla.Ast.LocalVariable{name: "case_counter"
-                      },
-                    },
-                    "1"
-                  }
-                },
-                {:or_block,
-                  {:=,
-                    {:access,
-                      {
-                        :index, %Tla.Ast.Variable{name: "stack"}, "1"}, %Tla.Ast.LocalVariable{name: "block_counter"
-                      },
-                    },
-                    "2"
-                  }
-                },
-                {:or_block,
-                  {:=,
-                    {:next, %Tla.Ast.Variable{name: "stack"}},
-                    %Tla.Ast.Operator{name: "SubSeq", parameters: [
-                      %Tla.Ast.Variable{name: "stack"},
-                      "2",
-                      %Tla.Ast.Operator{name: "Len", parameters: [
-                        %Tla.Ast.Variable{name: "stack"}
-                      ]}
-                    ]}
-                  }
-                },
-                {:or_block,
-                  {:=,
-                    {:next, %Tla.Ast.Variable{name: "return"}},
+                   {:access,
                     {
-                      :access,
-                      {:index, %Tla.Ast.Variable{name: "stack"}, "1"},
-                      {:index, %Tla.Ast.LocalVariable{name: "res_case_1"}, "1"}
-                    }
-                  }
-                }
-              ]}},
-              {:and_block, {:par, [
-                {:or_block,
+                      :index,
+                      %Tla.Ast.Variable{name: "stack"},
+                      "1"
+                    }, %Tla.Ast.LocalVariable{name: "case_counter"}}, "1"},
                   {:=,
-                    {:next, %Tla.Ast.Variable{name: "stack"}},
-                    {:except, %Tla.Ast.Variable{name: "stack"}, [
-                      {:=,
-                        {:exception, "1", %Tla.Ast.LocalVariable{name: "res_case_1"}},
-                        {:access,
-                          {:index, %Tla.Ast.Variable{name: "stack"}, "1"},
-                          %Tla.Ast.LocalVariable{name: "n"}
-                        }
-                      },
-                      {:=,
-                        {:exception, "1", %Tla.Ast.LocalVariable{name: "block_counter"}},
-                        "2"
-                      }
-                    ]}
-                  }
-              }
-              ]}}
-            ]
-          }
+                   {:access,
+                    {
+                      :index,
+                      %Tla.Ast.Variable{name: "stack"},
+                      "1"
+                    }, %Tla.Ast.LocalVariable{name: "block_counter"}}, "2"},
+                  {:=, {:next, %Tla.Ast.Variable{name: "stack"}},
+                   %Tla.Ast.Operator{
+                     name: "SubSeq",
+                     parameters: [
+                       %Tla.Ast.Variable{name: "stack"},
+                       "2",
+                       %Tla.Ast.Operator{
+                         name: "Len",
+                         parameters: [
+                           %Tla.Ast.Variable{name: "stack"}
+                         ]
+                       }
+                     ]
+                   }},
+                  {:=, {:next, %Tla.Ast.Variable{name: "return"}},
+                   {
+                     :access,
+                     {:index, %Tla.Ast.Variable{name: "stack"}, "1"},
+                     {:index, %Tla.Ast.LocalVariable{name: "res_case_1"}, "1"}
+                   }}
+                ]},
+               {:and,
+                [
+                  {:=, {:next, %Tla.Ast.Variable{name: "stack"}},
+                   {:except, %Tla.Ast.Variable{name: "stack"},
+                    [
+                      {:=, {:exception, "1", %Tla.Ast.LocalVariable{name: "res_case_1"}},
+                       {:access, {:index, %Tla.Ast.Variable{name: "stack"}, "1"},
+                        %Tla.Ast.LocalVariable{name: "n"}}},
+                      {:=, {:exception, "1", %Tla.Ast.LocalVariable{name: "block_counter"}}, "2"}
+                    ]}}
+                ]}
+             ]}
         },
         %Tla.Ast.Operator{
           name: "Spec",
           expression: {
             :and,
-            %Tla.Ast.Operator{name: "Init"},
-            {:stutter,
-              {:always, %Tla.Ast.Operator{name: "Next"}},
-              {:set, [%Tla.Ast.Variable{name: "stack"}]}
-            }
+            [
+              %Tla.Ast.Operator{name: "Init"},
+              {:stutter, {:always, %Tla.Ast.Operator{name: "Next"}},
+               {:set, [%Tla.Ast.Variable{name: "stack"}]}}
+            ]
           }
         }
       ]
@@ -275,27 +279,15 @@ defmodule Tla.Ast do
 
     to_tla(m)
   end
-
 end
 
 "---- MODULE Fib ----\n
-EXTENDS NaturalsIntegersTLCSequences\n
+EXTENDS Naturals,Integers,TLC,Sequences\n
 CONSTANT N\n
 VARIABLE stack\n
 VARIABLE return\n
-Init == \n
-  \t/\\ stack = <<[n |-> N,res_case_1 |-> <<-1>>,res_case_2 |-> <<-1,-1,-1>>,case_counter |-> 1,block_counter |-> 1]>>\n
-  \t/\\ return = -1\n
-\n\n
+Init == (stack = <<[n |-> N,res_case_1 |-> <<-1>>,res_case_2 |-> <<-1,-1,-1>>,case_counter |-> 1,block_counter |-> 1]>>) /\\ (return = -1)\n
 AppendToStart(item, list) == <<item>> \\o list\n
-Next == \n
-  \t/\\ (\\/ stack[1].case_counter = 1\n
-\\/ stack[1].block_counter = 2\n
-\\/ stack' = SubSeq(stack2Len(stack))\n
-\\/ return' = stack[1].res_case_1[1]\n
-\n)\n
-  \t/\\ (\\/ stack' = [stack EXCEPT ![1].res_case_1 = stack[1].n,![1].block_counter = 2]\n
-)\n
-\n\n
+Next == ((stack[1].case_counter = 1) /\\ (stack[1].block_counter = 2) /\\ (stack' = SubSeq(stack2Len(stack))) /\\ (return' = stack[1].res_case_1[1])) \\/ ((stack' = [stack EXCEPT ![1].res_case_1 = stack[1].n,![1].block_counter = 2]))\n
 Spec == Init /\\ [][Next]_<<stack>>\n
 ====\n"
