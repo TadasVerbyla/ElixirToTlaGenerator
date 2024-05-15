@@ -1,4 +1,4 @@
-defmodule ElixirToAstGenerator.StringUtils.SnakeToCamel do
+defmodule ElixirToTlaGenerator.Utils.String do
   def snake_to_camel(string) do
     string
     |> String.split("_", trim: true)

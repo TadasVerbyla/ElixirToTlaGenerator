@@ -129,7 +129,7 @@ defmodule Tla.Ast do
     do: ["[", Enum.map(e, &to_tla_expr/1) |> insert_symbol_wrapper(","), "]"]
 
   defp to_tla_expr({:par, e}), do: ["(", Enum.map(e, &to_tla_expr/1), ")"]
-  defp to_tla_expr({:not, e}), do: ["~", to_tla_expr(e)]
+  defp to_tla_expr({:not, e}), do: ["~(", to_tla_expr(e) , ")"]
   defp to_tla_expr({:next, e}), do: [to_tla_expr(e), "'"]
 
   defp to_tla_expr({:access, e1, e2}), do: [to_tla_expr(e1), ".", to_tla_expr(e2)]
@@ -142,6 +142,9 @@ defmodule Tla.Ast do
 
   defp to_tla_expr({:=, e1, e2}), do: [to_tla_expr(e1), " = ", to_tla_expr(e2)]
   defp to_tla_expr({:+, e1, e2}), do: [to_tla_expr(e1), " + ", to_tla_expr(e2)]
+  defp to_tla_expr({:-, e1, e2}), do: [to_tla_expr(e1), " - ", to_tla_expr(e2)]
+
+  defp to_tla_expr({:<, e1, e2}), do: [to_tla_expr(e1), " < ", to_tla_expr(e2)]
 
   defp to_tla_expr({:stutter, e1, e2}), do: [to_tla_expr(e1), "_", to_tla_expr(e2)]
 

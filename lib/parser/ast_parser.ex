@@ -1,6 +1,6 @@
 defmodule ElixirToTlaGenerator.Parser.AstParser do
   def parse_ast(ast) do
-    [_tlagen_name, clauses] = ast
+    [tlagen_name, clauses] = ast
 
     headers = get_headers(clauses)
     all_parameters = get_all_parameters(headers)
@@ -36,7 +36,7 @@ defmodule ElixirToTlaGenerator.Parser.AstParser do
       end)
 
     # TODO: FIX NUMBERING OF GROUPED ELEMENTS
-    [unique_paramteres, full_guards, function_groups]
+    [tlagen_name, unique_paramteres, full_guards, function_groups]
   end
 
   # ----------------------------------------------------------------------------

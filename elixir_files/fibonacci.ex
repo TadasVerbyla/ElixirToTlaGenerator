@@ -5,6 +5,9 @@ defmodule Fibonacci do
   end
 
   defp fib(n) do
-    fib(n - 1) + fib(n - 2)
+    a = fib(n - 1)
+    b = fib(n - 2)
+    c = a + b
+    c
   end
 end
