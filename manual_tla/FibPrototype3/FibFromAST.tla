@@ -4,29 +4,6 @@ CONSTANT N
 VARIABLES stack, return
 
 Init == 
-    
-    \* Inputs:
-    \* [
-    \*     [[[:n, nil]]],   # kintamasis n
-    \* [
-    \*     [
-    \*         [[[:<, [:n, nil], 2]]], # pirmo atvejo salygos, pirmas sarasas nurodo tas, kurias turi tenkinti, antras nurodo neiginius. 
-    \*         []
-    \*     ], 
-    \*     [
-    \*         [],                     # antro atvejo salygos, turi tik pirmo atvejo salygos paneigima
-    \*         [[[:<, [:n, nil], 2]]]
-    \*     ]
-    \* ],
-    \*     [
-    \*         [[{0, [:n, nil]}]], # pirmo atvejo funkcijos blokas (tik vienas)
-    \*         [
-    \*              [{0, [:-, [[:n, nil], 1]]}, {1, [:fib, [fn_nr: 0]]}], # antro atvejo blokai
-    \*              [{2, [:-, [[:n, nil], 2]]}, {3, [:fib, [fn_nr: 2]]}],
-    \*              [{4, [:+, [fn_nr: 1, fn_nr: 3]]}]
-    \*         ]
-    \*     ]
-    \* ]
 
     /\  stack = <<[
             n |-> N,
@@ -50,7 +27,6 @@ Next ==
     \/  /\ stack[1].case_counter = 1
         /\ stack[1].block_counter = 2
         /\ stack' = SubSeq(stack, 2, Len(stack))
-        \* /\ LET clause_result = stack[1].res_case_1[1] IN
         /\ return' = stack[1].res_case_1[1]
 
     \* ==== CASE 2 =====
@@ -59,7 +35,6 @@ Next ==
     \/  /\ stack[1].case_counter = 2
         /\ stack[1].block_counter = 4
         /\ stack' = SubSeq(stack, 2, Len(stack))
-        \* /\ LET clause_result = stack[1].res_case_2[1] + stack[1].res_case_2[2] IN
         /\ return' = stack[1].res_case_2[1] + stack[1].res_case_2[2]
 
 

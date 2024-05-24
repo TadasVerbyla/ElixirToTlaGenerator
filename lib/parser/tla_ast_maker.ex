@@ -1,41 +1,83 @@
 defmodule ElixirToTlaGenerator.Parser.TlaAstMaker do
-  def make_ast(elixir_data) do
-    [tlagen_name, parameters, full_guards, function_groups] = elixir_data
+  defmodule Context do
+    @type t() ::
+            String.t()
+            | [integer()]
+            | [atom()]
+            | %{}
+    defstruct module_name: nil,
+              steps_per_case: nil,
+              parameters: nil,
+              assignment_maps: nil,
+              full_guards: nil,
+              function_groups: nil
+  end
+
+  def make_ast([tlagen_name, parameters, full_guards, function_groups]) do
+    context = %Context{
+      module_name: tlagen_name,
+      steps_per_case:
+        Enum.map(function_groups, fn x ->
+          x
+          |> List.flatten()
+          |> Enum.reject(fn
+            {_, [:__block__, _]} -> true
+            _ -> false
+          end)
+          |> length()
+        end),
+      parameters: parameters |> Enum.map(fn {atom, _, _} -> atom end),
+      assignment_maps:
+        function_groups
+        |> Enum.map(fn x ->
+          x
+          |> List.flatten()
+          |> Enum.reject(fn
+            {_index, [:=, [{_atom, _, _}, _]]} -> false
+            _ -> true
+          end)
+          |> Enum.map(fn {index, [:=, [{atom, _, _}, _]]} -> {atom, index} end)
+          |> Enum.into(%{})
+        end),
+      full_guards: full_guards,
+      function_groups: function_groups
+    }
 
     module = %Tla.Ast.Module{
       name: Atom.to_string(tlagen_name),
       # For now, the extensions are hardcoded, as all the ones needed for fibonacciare already
       # covered by those needed for creating the stack memory representation it self
-      extends: ["Naturals", "TLC", "Sequences"],
+      extends: ["Naturals", "Integers", "TLC", "Sequences"],
       constants:
-        parameters
-        |> Enum.map(
-          &(&1
-            |> get_atom
-            |> Atom.to_string()
-            |> ElixirToTlaGenerator.Utils.String.snake_to_camel()
-            |> make_constant)
-        ),
+        context.parameters
+        |> Enum.map(fn x ->
+          x
+          |> Atom.to_string()
+          |> ElixirToTlaGenerator.Utils.String.snake_to_camel()
+          |> make_constant
+        end),
       # Variables hardcoded to fit the stack implementation of the specification
       variables: [%Tla.Ast.Variable{name: "stack"}, %Tla.Ast.Variable{name: "return"}],
-      operators: make_operators(elixir_data)
+      operators: make_operators(context)
     }
 
-    IO.chardata_to_string(Tla.Ast.to_tla(module))
-    # module
+    File.write(
+      "C:\\Users\\tadas\\Documents\\GitHub\\ElixirToTlaGenerator\\generated_tla\\#{Atom.to_string(tlagen_name)}.tla",
+      IO.chardata_to_string(Tla.Ast.to_tla(module))
+    )
   end
 
   def make_constant(name), do: %Tla.Ast.Constant{name: name}
   def get_atom({atom, _, _}), do: atom
 
-  def make_operators(elixir_data) do
-    # Spec and Init opperators remain the same for all cases as well
+  def make_operators(context) do
+    # Spec and Init operators remain the same for all cases as well
     append = %Tla.Ast.Operator{
-      name: "AppendToStart",
+      name: "AppendToSequenceStart",
       parameters: ["item", "list"],
       expression:
-        {:concat, {:set, [%Tla.Ast.LocalVariable{name: "item"}]},
-         %Tla.Ast.LocalVariable{name: "list"}}
+        {:concat, {:set, [%Tla.Ast.BoundVariable{name: "item"}]},
+         %Tla.Ast.BoundVariable{name: "list"}}
     }
 
     spec = %Tla.Ast.Operator{
@@ -50,79 +92,63 @@ defmodule ElixirToTlaGenerator.Parser.TlaAstMaker do
       }
     }
 
-    [_tlagen_name, parameters, full_guards, function_groups] = elixir_data
+    init = make_init(context)
+    next = make_next(context)
 
-    blocks_per_case = Enum.map(function_groups, &length/1)
-
-    steps_per_casse =
-      Enum.map(function_groups, fn x ->
-        x
-        |> List.flatten()
-        |> Enum.reject(fn
-          {_, [:__block__, _]} -> true
-          _ -> false
-        end)
-        |> length()
-      end)
-
-    init = make_init(parameters, steps_per_casse)
-    next = make_next(full_guards, function_groups)
-
-    [init, append, spec, next]
+    [init, append, next, spec]
   end
 
-  def make_init(parameters, steps_per_casse) do
+  def make_init(context) do
     variables =
-      parameters
+      context.parameters
       |> Enum.map(fn x ->
         x
-        |> get_atom()
         |> Atom.to_string()
         |> (fn name ->
-              {:assign, %Tla.Ast.LocalVariable{name: name},
+              {:assign, %Tla.Ast.BoundVariable{name: name},
                %Tla.Ast.Constant{name: ElixirToTlaGenerator.Utils.String.snake_to_camel(name)}}
             end).()
       end)
 
     case_results =
-      steps_per_casse
+      context.steps_per_case
       |> Enum.with_index()
       |> Enum.map(fn {x, index} ->
-        {:assign, %Tla.Ast.LocalVariable{name: "res_case_#{index + 1}"},
+        {:assign, %Tla.Ast.BoundVariable{name: "res_case_#{index + 1}"},
          {:set, List.duplicate("-1", x)}}
       end)
 
-    case_counter = {:assign, %Tla.Ast.LocalVariable{name: "case_counter"}, "1"}
-    block_counter = {:assign, %Tla.Ast.LocalVariable{name: "block_counter"}, "1"}
+    case_counter = {:assign, %Tla.Ast.BoundVariable{name: "case_counter"}, "1"}
+    block_counter = {:assign, %Tla.Ast.BoundVariable{name: "block_counter"}, "1"}
 
     %Tla.Ast.Operator{
       name: "Init",
       expression:
         {:and,
          [
-           {:=, %Tla.Ast.LocalVariable{name: "stack"},
+           {:=, %Tla.Ast.BoundVariable{name: "stack"},
             {
               :set,
               [
                 {:arr, variables ++ case_results ++ [case_counter, block_counter]}
               ]
             }},
-           {:=, %Tla.Ast.LocalVariable{name: "return"}, "-1"}
+           {:=, %Tla.Ast.BoundVariable{name: "return"}, "-1"}
          ]}
     }
   end
 
-  def make_next(full_guards, function_groups) do
+  def make_next(context) do
     case_value_returns =
-      function_groups
+      context.function_groups
       |> Enum.with_index()
       |> Enum.map(fn {x, index} -> make_case_value_returns(index, x) end)
 
     case_blocks =
-      function_groups
+      context.function_groups
       |> Enum.with_index()
       |> Enum.map(fn {x, index} ->
-        make_case_block(Enum.at(full_guards, index), x, index, length(x) - 1)
+        make_case_block(index, length(x) - 1, context)
       end)
 
     or_blocks = case_value_returns ++ List.flatten(case_blocks)
@@ -142,7 +168,7 @@ defmodule ElixirToTlaGenerator.Parser.TlaAstMaker do
           :index,
           %Tla.Ast.Variable{name: "stack"},
           "1"
-        }, %Tla.Ast.LocalVariable{name: "case_counter"}}, Integer.to_string(case_number + 1)}
+        }, %Tla.Ast.BoundVariable{name: "case_counter"}}, Integer.to_string(case_number + 1)}
 
     block_counter_condition =
       {:=,
@@ -151,7 +177,7 @@ defmodule ElixirToTlaGenerator.Parser.TlaAstMaker do
           :index,
           %Tla.Ast.Variable{name: "stack"},
           "1"
-        }, %Tla.Ast.LocalVariable{name: "block_counter"}},
+        }, %Tla.Ast.BoundVariable{name: "block_counter"}},
        Integer.to_string(length(function) + 1)}
 
     # Hardcoded "pop" operation
@@ -198,12 +224,12 @@ defmodule ElixirToTlaGenerator.Parser.TlaAstMaker do
 
         {last_step_index, _} = last_step
 
-        {:index, %Tla.Ast.LocalVariable{name: "res_case_#{index + 1}"},
+        {:index, %Tla.Ast.BoundVariable{name: "res_case_#{index + 1}"},
          Integer.to_string(last_step_index + 1)}
 
       {_, {_atom, _, nil}} ->
         # Need to fix this eventually
-        {:index, %Tla.Ast.LocalVariable{name: "res_case_#{index + 1}"}, "1"}
+        {:index, %Tla.Ast.BoundVariable{name: "res_case_#{index + 1}"}, "1"}
     end
   end
 
@@ -218,7 +244,7 @@ defmodule ElixirToTlaGenerator.Parser.TlaAstMaker do
     case List.last(steps) do
       {_, {atom, _, _}} ->
         {:access, {:index, %Tla.Ast.Variable{name: "stack"}, "1"},
-         %Tla.Ast.LocalVariable{name: Atom.to_string(atom)}}
+         %Tla.Ast.BoundVariable{name: Atom.to_string(atom)}}
     end
   end
 
@@ -241,7 +267,9 @@ defmodule ElixirToTlaGenerator.Parser.TlaAstMaker do
   def process_param(value) when is_binary(value), do: value
   def process_param(value) when is_number(value), do: Integer.to_string(value)
 
-  def make_case_block(guards, function, case_index, 0) do
+  def make_case_block(case_index, 0, context) do
+    guards = context.full_guards |> Enum.at(case_index)
+    function = context.function_groups |> Enum.at(case_index)
     [true_guards, false_guards] = guards
 
     true_guards_tla = Enum.map(true_guards, &guard_to_tla/1)
@@ -254,7 +282,7 @@ defmodule ElixirToTlaGenerator.Parser.TlaAstMaker do
           :index,
           %Tla.Ast.Variable{name: "stack"},
           "1"
-        }, %Tla.Ast.LocalVariable{name: "case_counter"}}, Integer.to_string(case_index + 1)}
+        }, %Tla.Ast.BoundVariable{name: "case_counter"}}, Integer.to_string(case_index + 1)}
 
     block_counter =
       {:=,
@@ -263,24 +291,24 @@ defmodule ElixirToTlaGenerator.Parser.TlaAstMaker do
           :index,
           %Tla.Ast.Variable{name: "stack"},
           "1"
-        }, %Tla.Ast.LocalVariable{name: "block_counter"}}, "1"}
+        }, %Tla.Ast.BoundVariable{name: "block_counter"}}, "1"}
 
     stack_if_true =
       {:=, {:next, %Tla.Ast.Variable{name: "stack"}},
        {:except, %Tla.Ast.Variable{name: "stack"},
         [
-          {:=, {:exception, "1", %Tla.Ast.LocalVariable{name: "res_case_1"}},
+          {:=, {:exception, "1", {:index, %Tla.Ast.BoundVariable{name: "res_case_1"}, "1"}},
            make_exception_val_return(List.flatten(function))},
-          {:=, {:exception, "1", %Tla.Ast.LocalVariable{name: "block_counter"}}, "2"}
+          {:=, {:exception, "1", %Tla.Ast.BoundVariable{name: "block_counter"}}, "2"}
         ]}}
 
     stack_if_false =
       {:=, {:next, %Tla.Ast.Variable{name: "stack"}},
        {:except, %Tla.Ast.Variable{name: "stack"},
         [
-          {:=, {:exception, "1", %Tla.Ast.LocalVariable{name: "case_counter"}},
+          {:=, {:exception, "1", %Tla.Ast.BoundVariable{name: "case_counter"}},
            Integer.to_string(case_index + 2)},
-          {:=, {:exception, "1", %Tla.Ast.LocalVariable{name: "block_counter"}}, "1"}
+          {:=, {:exception, "1", %Tla.Ast.BoundVariable{name: "block_counter"}}, "1"}
         ]}}
 
     return =
@@ -301,20 +329,10 @@ defmodule ElixirToTlaGenerator.Parser.TlaAstMaker do
     [case_true, case_false]
   end
 
-  def make_case_block(guards, function, case_index, recursion_count) do
-    # IO.inspect(function |> List.flatten())
-
-    assignment_map =
-      function
-      |> List.flatten()
-      |> Enum.reject(fn
-        {index, [:=, [{atom, _, _}, _]]} -> false
-        _ -> true
-      end)
-      |> Enum.map(fn {index, [:=, [{atom, _, _}, _]]} -> {atom, index} end)
-      |> Enum.into(%{})
-
-    # IO.inspect(assignment_map)
+  def make_case_block(case_index, recursion_count, context) do
+    guards = context.full_guards |> Enum.at(case_index)
+    function = context.function_groups |> Enum.at(case_index)
+    assignment_map = context.assignment_maps |> Enum.at(case_index)
 
     {last_block, recursive_blocks} = List.pop_at(function, -1)
 
@@ -341,15 +359,22 @@ defmodule ElixirToTlaGenerator.Parser.TlaAstMaker do
           x,
           index,
           case_index,
-          recursion_count,
           guards_ast,
           assignment_map,
-          step_count
+          step_count,
+          context.parameters
         )
       end)
 
     last_step_ast =
-      make_last_block(last_block, case_index, recursion_count, guards_ast, assignment_map)
+      make_last_block(
+        last_block,
+        case_index,
+        recursion_count,
+        guards_ast,
+        assignment_map,
+        context.parameters
+      )
 
     [recursive_steps_ast, last_step_ast]
   end
@@ -358,10 +383,10 @@ defmodule ElixirToTlaGenerator.Parser.TlaAstMaker do
         block,
         block_index,
         case_index,
-        recursion_count,
         guards_ast,
         assignment_map,
-        step_count
+        step_count,
+        parameters
       ) do
     {recursion, assignments} = List.pop_at(block, -1)
     {_, [_, [{:fn_nr, recursive_param_nr}]]} = recursion
@@ -373,7 +398,7 @@ defmodule ElixirToTlaGenerator.Parser.TlaAstMaker do
           :index,
           %Tla.Ast.Variable{name: "stack"},
           "1"
-        }, %Tla.Ast.LocalVariable{name: "case_counter"}}, Integer.to_string(case_index + 1)}
+        }, %Tla.Ast.BoundVariable{name: "case_counter"}}, Integer.to_string(case_index + 1)}
 
     block_counter =
       {:=,
@@ -382,7 +407,7 @@ defmodule ElixirToTlaGenerator.Parser.TlaAstMaker do
           :index,
           %Tla.Ast.Variable{name: "stack"},
           "1"
-        }, %Tla.Ast.LocalVariable{name: "block_counter"}}, Integer.to_string(block_index + 1)}
+        }, %Tla.Ast.BoundVariable{name: "block_counter"}}, Integer.to_string(block_index + 1)}
 
     current_return =
       {:=, %Tla.Ast.Variable{name: "return"}, "-1"}
@@ -393,15 +418,15 @@ defmodule ElixirToTlaGenerator.Parser.TlaAstMaker do
     except_recursive_call =
       {:=, {:next, %Tla.Ast.Variable{name: "stack"}},
        %Tla.Ast.Operator{
-         name: "AppendToStart",
+         name: "AppendToSequenceStart",
          parameters: [
-           {:except, %Tla.Ast.Variable{name: "stack"},
+           {:except, {:index, %Tla.Ast.Variable{name: "stack"}, "1"},
             [
               {:=, {:exception, {}, %Tla.Ast.Variable{name: "n"}},
                "fn_nr_#{recursive_param_nr + 1}"},
               {:=, {:exception, {}, %Tla.Ast.Variable{name: "case_counter"}}, "1"},
               {:=, {:exception, {}, %Tla.Ast.Variable{name: "block_counter"}}, "1"},
-              {:=, {:exception, {}, %Tla.Ast.Variable{name: "res_case#{case_index + 1}"}},
+              {:=, {:exception, {}, %Tla.Ast.Variable{name: "res_case_#{case_index + 1}"}},
                {:set, List.duplicate("-1", step_count)}}
             ]},
            %Tla.Ast.Variable{name: "stack"}
@@ -410,9 +435,6 @@ defmodule ElixirToTlaGenerator.Parser.TlaAstMaker do
 
     {recursion_index, _} = List.last(assignments)
 
-    block_results =
-      assignments |> Enum.map(fn x -> make_results(x, case_index, assignment_map) end)
-
     except_return_assign =
       {:=, {:next, %Tla.Ast.Variable{name: "stack"}},
        {:except, %Tla.Ast.Variable{name: "stack"},
@@ -420,31 +442,44 @@ defmodule ElixirToTlaGenerator.Parser.TlaAstMaker do
          |> Enum.map(fn {step_index, _} ->
            {:=,
             {:exception, "1",
-             {:index, %Tla.Ast.LocalVariable{name: "res_case_#{case_index + 1}"},
+             {:index, %Tla.Ast.BoundVariable{name: "res_case_#{case_index + 1}"},
               Integer.to_string(step_index + 1)}},
             %Tla.Ast.Variable{name: "fn_nr_#{step_index + 1}"}}
          end)) ++
           [
             {:=,
              {:exception, "1",
-              {:index, %Tla.Ast.LocalVariable{name: "res_case_#{case_index + 1}"},
+              {:index, %Tla.Ast.BoundVariable{name: "res_case_#{case_index + 1}"},
                Integer.to_string(recursion_index + 2)}}, %Tla.Ast.Variable{name: "return"}},
-            {:=, {:exception, "1", %Tla.Ast.LocalVariable{name: "block_counter"}},
+            {:=, {:exception, "1", %Tla.Ast.BoundVariable{name: "block_counter"}},
              Integer.to_string(block_index + 2)}
           ]}}
 
+    {block_first_step, _} = Enum.at(block, 0)
+
+    recursive_call_with_let =
+      {:let,
+       assignments
+       |> Enum.map(fn x -> make_results(x, case_index, assignment_map, parameters, block_first_step) end),
+       except_recursive_call}
+
+    return_assign_with_let =
+      {:let,
+       assignments
+       |> Enum.map(fn x -> make_results(x, case_index, assignment_map, parameters, block_first_step) end),
+       except_return_assign}
+
     [
       {:and,
-       [case_counter, block_counter] ++
-         guards_ast ++ block_results ++ [current_return, except_recursive_call, next_return]},
+       [case_counter, block_counter, current_return] ++
+         guards_ast ++ [recursive_call_with_let, next_return]},
       {:and,
-       [case_counter, block_counter] ++
-         guards_ast ++
-         block_results ++ [{:not, current_return}, except_return_assign, next_return]}
+       [case_counter, block_counter, {:not, current_return}] ++
+         guards_ast ++ [return_assign_with_let, next_return]}
     ]
   end
 
-  def make_last_block(block, case_index, recursion_count, guards_ast, assignment_map) do
+  def make_last_block(block, case_index, recursion_count, guards_ast, assignment_map, parameters) do
     case_counter =
       {:=,
        {:access,
@@ -452,7 +487,7 @@ defmodule ElixirToTlaGenerator.Parser.TlaAstMaker do
           :index,
           %Tla.Ast.Variable{name: "stack"},
           "1"
-        }, %Tla.Ast.LocalVariable{name: "case_counter"}}, Integer.to_string(case_index + 1)}
+        }, %Tla.Ast.BoundVariable{name: "case_counter"}}, Integer.to_string(case_index + 1)}
 
     block_counter =
       {:=,
@@ -461,7 +496,7 @@ defmodule ElixirToTlaGenerator.Parser.TlaAstMaker do
           :index,
           %Tla.Ast.Variable{name: "stack"},
           "1"
-        }, %Tla.Ast.LocalVariable{name: "block_counter"}}, Integer.to_string(recursion_count + 2)}
+        }, %Tla.Ast.BoundVariable{name: "block_counter"}}, Integer.to_string(recursion_count + 1)}
 
     current_return =
       {:=, %Tla.Ast.Variable{name: "return"}, "-1"}
@@ -476,104 +511,105 @@ defmodule ElixirToTlaGenerator.Parser.TlaAstMaker do
         _ -> false
       end)
 
-    block_results = block |> Enum.map(fn x -> make_results(x, case_index, assignment_map) end)
+    res_case_exceptions =
+      block
+      |> Enum.map(fn {step_index, _} ->
+        {:=,
+         {:exception, "1",
+          {:index, %Tla.Ast.BoundVariable{name: "res_case_#{case_index + 1}"},
+           Integer.to_string(step_index + 1)}},
+         %Tla.Ast.Variable{name: "fn_nr_#{step_index + 1}"}}
+      end)
 
     stack_except =
       {:=, {:next, %Tla.Ast.Variable{name: "stack"}},
        {:except, %Tla.Ast.Variable{name: "stack"},
-        block
-        |> Enum.map(fn {step_index, _} ->
-          {:=,
-           {:exception, "1",
-            {:index, %Tla.Ast.LocalVariable{name: "res_case_#{case_index + 1}"},
-             Integer.to_string(step_index + 1)}},
-           %Tla.Ast.Variable{name: "fn_nr_#{step_index + 1}"}}
-        end)}}
+        res_case_exceptions ++
+          [
+            {:=, {:exception, "1", %Tla.Ast.BoundVariable{name: "block_counter"}},
+             {:access, {:index, %Tla.Ast.BoundVariable{name: "stack"}, "1"},
+              {:+, %Tla.Ast.BoundVariable{name: "block_counter"}, "1"}}}
+          ]}}
+
+    {block_first_step, _} = Enum.at(block, 0)
+
+    except_with_let =
+      {:let,
+       block
+       |> Enum.map(fn x ->
+         make_results(x, case_index, assignment_map, parameters, block_first_step)
+       end), stack_except}
 
     {:and,
-     [case_counter, block_counter] ++
-       guards_ast ++ block_results ++ [current_return, stack_except, next_return]}
+     [case_counter, block_counter, current_return] ++
+       guards_ast ++ [except_with_let, next_return]}
   end
 
   def get_param({val, _, _}), do: val
   def get_param(val), do: val
 
   def make_results(
-        {step_index, [:=, [{atom, _, _}, {:fn_nr, fn_nr}]]},
+        {step_index, [:=, [{_, _, _}, {:fn_nr, fn_nr}]]},
         case_index,
-        _assignment_map
+        _assignment_map,
+        _parameters,
+        block_first_step
       ) do
-    {:=, %Tla.Ast.LocalVariable{name: "fn_nr_#{step_index + 1}"},
-     {:access, {:index, %Tla.Ast.Variable{name: "stack"}, "1"},
-      {:index, %Tla.Ast.LocalVariable{name: "res_case_#{case_index + 1}"},
-       Integer.to_string(fn_nr + 1)}}}
+    case block_first_step > fn_nr do
+      true ->
+        {:==, %Tla.Ast.BoundVariable{name: "fn_nr_#{step_index + 1}"},
+         {:access, {:index, %Tla.Ast.Variable{name: "stack"}, "1"},
+          {:index, %Tla.Ast.BoundVariable{name: "res_case_#{case_index + 1}"},
+           Integer.to_string(fn_nr + 1)}}}
+
+      false ->
+        {:==, %Tla.Ast.BoundVariable{name: "fn_nr_#{step_index + 1}"},
+         %Tla.Ast.BoundVariable{name: "fn_nr_#{fn_nr + 1}"}}
+    end
   end
 
-  def make_results({step_index, [atom, [e1, e2]]}, case_index, assignment_map) do
+  def make_results(
+        {step_index, [atom, [e1, e2]]},
+        case_index,
+        assignment_map,
+        parameters,
+        block_first_step
+      ) do
     val1 = get_param(e1)
     val2 = get_param(e2)
 
-    val1 =
-      case Map.get(assignment_map, val1) do
-        nil ->
-          case val1 do
-            :n ->
-              {:access, {:index, %Tla.Ast.Variable{name: "stack"}, "1"},
-               %Tla.Ast.Variable{name: "n"}}
+    val1 = get_value(val1, parameters, case_index, assignment_map, block_first_step)
 
-            atom ->
-              case is_integer(atom) do
-                true -> Integer.to_string(atom)
-                false -> atom
-              end
-          end
+    val2 = get_value(val2, parameters, case_index, assignment_map, block_first_step)
 
-        fn_nr ->
-          {:access, {:index, %Tla.Ast.Variable{name: "stack"}, "1"},
-           {:index, %Tla.Ast.LocalVariable{name: "res_case_#{case_index + 1}"},
-            Integer.to_string(fn_nr + 1)}}
-      end
+    {:==, %Tla.Ast.BoundVariable{name: "fn_nr_#{step_index + 1}"}, {atom, val1, val2}}
+  end
 
-    val2 =
-      case Map.get(assignment_map, val2) do
-        nil ->
-          case val2 do
-            :n ->
-              {:access, {:index, %Tla.Ast.Variable{name: "stack"}, "1"},
-               %Tla.Ast.Variable{name: "n"}}
+  def get_value(value, parameters, case_index, assignment_map, block_first_step) do
+    case Map.get(assignment_map, value) do
+      nil ->
+        case Enum.member?(parameters, value) do
+          true ->
+            {:access, {:index, %Tla.Ast.Variable{name: "stack"}, "1"},
+             %Tla.Ast.Variable{name: Atom.to_string(value)}}
 
-            atom ->
-              case is_integer(atom) do
-                true -> Integer.to_string(atom)
-                false -> atom
-              end
-          end
+          false ->
+            case is_integer(value) do
+              true -> Integer.to_string(value)
+              false -> value
+            end
+        end
 
-        fn_nr ->
-          {:access, {:index, %Tla.Ast.Variable{name: "stack"}, "1"},
-           {:index, %Tla.Ast.LocalVariable{name: "res_case_#{case_index + 1}"},
-            Integer.to_string(fn_nr + 1)}}
-      end
+      fn_nr ->
+        case block_first_step > fn_nr + 1 do
+          true ->
+            {:access, {:index, %Tla.Ast.Variable{name: "stack"}, "1"},
+             {:index, %Tla.Ast.BoundVariable{name: "res_case_#{case_index + 1}"},
+              Integer.to_string(fn_nr + 1)}}
 
-    {:=, %Tla.Ast.LocalVariable{name: "fn_nr_#{step_index + 1}"}, {atom, val1, val2}}
+          false ->
+            %Tla.Ast.BoundVariable{name: "fn_nr_#{fn_nr + 1}"}
+        end
+    end
   end
 end
-
-"---- MODULE fibonacci ----\n
-EXTENDS Naturals,TLC,Sequences\n
-CONSTANT N\n
-VARIABLE stack\n
-VARIABLE return\n
-Init == (stack = <<[n |-> N,res_case_1 |-> <<-1>>,res_case_2 |-> <<-1,-1,-1,-1,-1,-1,-1,-1>>,case_counter |-> 1,block_counter |-> 1]>>) /\\ (return = -1)\nAppendToStart(item, list) == <<item>> \\o list\n
-Spec == (Init) /\\ ([][Next]_<<stack>>)\n
-Next ==
-        ((stack[1].case_counter = 1) /\\ (stack[1].block_counter = 2) /\\ (stack' = SubSeq(stack2Len(stack))) /\\ (return' = stack[1].res_case_1[1]))
-    \\/ ((stack[1].case_counter = 2) /\\ (stack[1].block_counter = 4) /\\ (stack' = SubSeq(stack2Len(stack))) /\\ (return' = stack[1].res_case_2[8]))
-    \\/ ((stack[1].case_counter = 1) /\\ (stack[1].block_counter = 1) /\\ (stack[1].n < 2) /\\ (stack' = [stack EXCEPT ![1].res_case_1 = stack[1].n,![1].block_counter = 2]) /\\ (return' = -1))
-    \\/ ((stack[1].case_counter = 1) /\\ (stack[1].block_counter = 1) /\\ (~(stack[1].n < 2)) /\\ (stack' = [stack EXCEPT ![1].case_counter = 2,![1].block_counter = 1]) /\\ (return' = -1))
-    \\/ ((stack[1].case_counter = 2) /\\ (stack[1].block_counter = 1) /\\ (~(stack[1].n < 2)) /\\ (fn_nr_1 = stack[1].n - 1) /\\ (return = -1) /\\ (stack' = AppendToStart([stack EXCEPT !.n = fn_nr_1,!.case_counter = 1,!.block_counter = 1,!.res_case2 = <<-1,-1,-1,-1,-1,-1,-1,-1>>]stack)) /\\ (return' = -1))
-    \\/ ((stack[1].case_counter = 2) /\\ (stack[1].block_counter = 1) /\\ (~(stack[1].n < 2)) /\\ (fn_nr_1 = stack[1].n - 1) /\\ (~(return = -1)) /\\ (stack' = [stack EXCEPT ![1].res_case_2[1] = fn_nr_1,![1].res_case_2[2] = return,![1].block_counter = 2]) /\\ (return' = -1))
-    \\/ ((stack[1].case_counter = 2) /\\ (stack[1].block_counter = 2) /\\ (~(stack[1].n < 2)) /\\ (fn_nr_3 = stack[1].res_case_2[2]) /\\ (fn_nr_4 = stack[1].n - 2) /\\ (return = -1) /\\ (stack' = AppendToStart([stack EXCEPT !.n = fn_nr_4,!.case_counter = 1,!.block_counter = 1,!.res_case2 = <<-1,-1,-1,-1,-1,-1,-1,-1>>]stack)) /\\ (return' = -1))
-    \\/ ((stack[1].case_counter = 2) /\\ (stack[1].block_counter = 2) /\\ (~(stack[1].n < 2)) /\\ (fn_nr_3 = stack[1].res_case_2[2]) /\\ (fn_nr_4 = stack[1].n - 2) /\\ (~(return = -1)) /\\ (stack' = [stack EXCEPT ![1].res_case_2[3] = fn_nr_3,![1].res_case_2[4] = fn_nr_4,![1].res_case_2[5] = return,![1].block_counter = 3]) /\\ (return' = -1))
-    \\/ ((stack[1].case_counter = 2) /\\ (stack[1].block_counter = 4) /\\ (~(stack[1].n < 2)) /\\ (fn_nr_6 = stack[1].res_case_2[5]) /\\ (fn_nr_7 = stack[1].res_case_2[3] + stack[1].res_case_2[6]) /\\ (fn_nr_8 = stack[1].res_case_2[7]) /\\ (return = -1) /\\ (stack' = [stack EXCEPT ![1].res_case_2[6] = fn_nr_6,![1].res_case_2[7] = fn_nr_7,![1].res_case_2[8] = fn_nr_8]) /\\ (return' = -1))\n
-====\n"

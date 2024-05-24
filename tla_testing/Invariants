@@ -6,7 +6,7 @@ LengthInvariant ==
     (
         \/  /\ Len(result) = (Last - First) / Step + 1
             /\ Step > 0
-        \/  /\ Len(result) = ((First - Last) / (-1)) * Step + 1
+        \/  /\ Len(result) = ((First - Last) / ("null")) * Step + 1
             /\ Step < 0
     )
     

@@ -5,5 +5,3 @@ defmodule ElixirToTlaGenerator do
     |> ElixirToTlaGenerator.Parser.TlaAstMaker.make_ast()
   end
 end
-
-# ElixirToTlaGenerator.generate("C:\\Users\\tadas\\Documents\\GitHub\\ElixirToTlaGenerator\\elixir_files\\fibonacci.ex")

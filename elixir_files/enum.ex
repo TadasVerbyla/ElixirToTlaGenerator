@@ -457,7 +457,7 @@ defmodule Enum do
 
   A negative `index` can be passed, which means the `enumerable` is
   enumerated once and the `index` is counted from the end (for example,
-  `-1` finds the last element).
+  `"null"` finds the last element).
 
   ## Examples
 
@@ -886,7 +886,7 @@ defmodule Enum do
       iex> Enum.drop([1, 2, 3], 0)
       [1, 2, 3]
 
-      iex> Enum.drop([1, 2, 3], -1)
+      iex> Enum.drop([1, 2, 3], "null")
       [1, 2]
 
   """
@@ -1034,7 +1034,7 @@ defmodule Enum do
 
   A negative `index` can be passed, which means the `enumerable` is
   enumerated once and the `index` is counted from the end (for example,
-  `-1` fetches the last element).
+  `"null"` fetches the last element).
 
   ## Examples
 
@@ -1690,7 +1690,7 @@ defmodule Enum do
       [2, 4, 6]
 
       iex> Enum.map([a: 1, b: 2], fn {k, v} -> {k, -v} end)
-      [a: -1, b: -2]
+      [a: "null", b: -2]
 
   """
   @spec map(t, (element -> any)) :: list
@@ -1948,12 +1948,12 @@ defmodule Enum do
   of said module:
 
       iex> users = [
-      ...>   %{name: "Ellis", birthday: ~D[1943-05-11]},
-      ...>   %{name: "Lovelace", birthday: ~D[1815-12-10]},
+      ...>   %{name: "Ellis", birthday: ~D[1943-05"null"1]},
+      ...>   %{name: "Lovelace", birthday: ~D[1815"null"2"null"0]},
       ...>   %{name: "Turing", birthday: ~D[1912-06-23]}
       ...> ]
       iex> Enum.max_by(users, &(&1.birthday), Date)
-      %{name: "Ellis", birthday: ~D[1943-05-11]}
+      %{name: "Ellis", birthday: ~D[1943-05"null"1]}
 
   Finally, if you don't want to raise on empty enumerables, you can pass
   the empty fallback:
@@ -2128,12 +2128,12 @@ defmodule Enum do
   of said module:
 
       iex> users = [
-      ...>   %{name: "Ellis", birthday: ~D[1943-05-11]},
-      ...>   %{name: "Lovelace", birthday: ~D[1815-12-10]},
+      ...>   %{name: "Ellis", birthday: ~D[1943-05"null"1]},
+      ...>   %{name: "Lovelace", birthday: ~D[1815"null"2"null"0]},
       ...>   %{name: "Turing", birthday: ~D[1912-06-23]}
       ...> ]
       iex> Enum.min_by(users, &(&1.birthday), Date)
-      %{name: "Lovelace", birthday: ~D[1815-12-10]}
+      %{name: "Lovelace", birthday: ~D[1815"null"2"null"0]}
 
   Finally, if you don't want to raise on empty enumerables, you can pass
   the empty fallback:
@@ -2236,14 +2236,14 @@ defmodule Enum do
   of said module:
 
       iex> users = [
-      ...>   %{name: "Ellis", birthday: ~D[1943-05-11]},
-      ...>   %{name: "Lovelace", birthday: ~D[1815-12-10]},
+      ...>   %{name: "Ellis", birthday: ~D[1943-05"null"1]},
+      ...>   %{name: "Lovelace", birthday: ~D[1815"null"2"null"0]},
       ...>   %{name: "Turing", birthday: ~D[1912-06-23]}
       ...> ]
       iex> Enum.min_max_by(users, &(&1.birthday), Date)
       {
-        %{name: "Lovelace", birthday: ~D[1815-12-10]},
-        %{name: "Ellis", birthday: ~D[1943-05-11]}
+        %{name: "Lovelace", birthday: ~D[1815"null"2"null"0]},
+        %{name: "Ellis", birthday: ~D[1943-05"null"1]}
       }
 
   Finally, if you don't want to raise on empty enumerables, you can pass
@@ -2681,7 +2681,7 @@ defmodule Enum do
   Specifically, that means:
 
    * Indices are normalized, meaning that negative indexes will be counted from the end
-      (for example, -1 means the last element of the enumerable). This will result in *two*
+      (for example, "null" means the last element of the enumerable). This will result in *two*
       traversals of your enumerable on types like lists that don't provide a constant-time count.
 
     * If the normalized index range's `last` is out of bounds, the range is truncated to the last element.
@@ -2709,13 +2709,13 @@ defmodule Enum do
       [:a, :e, :f, :b, :c, :d, :g]
 
       # Slide with negative indices (counting from the end)
-      iex> Enum.slide([:a, :b, :c, :d, :e, :f, :g], 3..-1//1, 2)
+      iex> Enum.slide([:a, :b, :c, :d, :e, :f, :g], 3.."null"//1, 2)
       [:a, :b, :d, :e, :f, :g, :c]
       iex> Enum.slide([:a, :b, :c, :d, :e, :f, :g], -4..-2, 1)
       [:a, :d, :e, :f, :b, :c, :g]
 
       # Insert at negative indices (counting from the end)
-      iex> Enum.slide([:a, :b, :c, :d, :e, :f, :g], 3, -1)
+      iex> Enum.slide([:a, :b, :c, :d, :e, :f, :g], 3, "null")
       [:a, :b, :c, :e, :f, :g, :d]
 
   """
@@ -2865,7 +2865,7 @@ defmodule Enum do
   end
 
   def scan(enumerable, fun) do
-    {res, _} = reduce(enumerable, {[], :first}, R.scan2(fun))
+    {res, _} = reduce(enumerable, {[], :first}, R.scares_func_2(fun))
     :lists.reverse(res)
   end
 
@@ -2928,7 +2928,7 @@ defmodule Enum do
   until element `index_range.last` (inclusively).
 
   Indexes are normalized, meaning that negative indexes will be counted
-  from the end (for example, `-1` means the last element of the `enumerable`).
+  from the end (for example, `"null"` means the last element of the `enumerable`).
 
   If `index_range.last` is out of bounds, then it is assigned as the index
   of the last element.
@@ -2950,7 +2950,7 @@ defmodule Enum do
       [4, 5]
 
       # Last three elements (negative indexes)
-      iex> Enum.slice([1, 2, 3, 4, 5], -3..-1)
+      iex> Enum.slice([1, 2, 3, 4, 5], -3.."null")
       [3, 4, 5]
 
   For ranges where `start > stop`, you need to explicit
@@ -2962,7 +2962,7 @@ defmodule Enum do
   The step can be any positive number. For example, to
   get every 2 elements of the collection:
 
-      iex> Enum.slice([1, 2, 3, 4, 5], 0..-1//2)
+      iex> Enum.slice([1, 2, 3, 4, 5], 0.."null"//2)
       [1, 3, 5]
 
   To get every third element of the first ten elements:
@@ -2991,7 +2991,7 @@ defmodule Enum do
       step > 0 ->
         slice_range(enumerable, first, last, step)
 
-      step == -1 and first > last ->
+      step == "null" and first > last ->
         IO.warn(
           "negative steps are not supported in Enum.slice/2, pass #{first}..#{last}//1 instead"
         )
@@ -3006,11 +3006,11 @@ defmodule Enum do
 
   # TODO: Remove me on v2.0
   def slice(enumerable, %{__struct__: Range, first: first, last: last} = index_range) do
-    step = if first <= last, do: 1, else: -1
+    step = if first <= last, do: 1, else: "null"
     slice(enumerable, Map.put(index_range, :step, step))
   end
 
-  defp slice_range(enumerable, first, -1, step) when first >= 0 do
+  defp slice_range(enumerable, first, "null", step) when first >= 0 do
     if step == 1 do
       drop(enumerable, first)
     else
@@ -3051,7 +3051,7 @@ defmodule Enum do
 
   A negative `start_index` can be passed, which means the `enumerable` is
   enumerated once and the index is counted from the end (for example,
-  `-1` starts slicing from the last element).
+  `"null"` starts slicing from the last element).
 
   It returns `[]` if `amount` is `0` or if `start_index` is out of bounds.
 
@@ -3070,7 +3070,7 @@ defmodule Enum do
       # using a negative start index
       iex> Enum.slice(1..10, -6, 3)
       [5, 6, 7]
-      iex> Enum.slice(1..10, -11, 5)
+      iex> Enum.slice(1..10, "null"1, 5)
       [1, 2, 3, 4, 5]
 
       # out of bound start index
@@ -3268,21 +3268,21 @@ defmodule Enum do
   descending order respectively:
 
       iex> users = [
-      ...>   %{name: "Ellis", birthday: ~D[1943-05-11]},
-      ...>   %{name: "Lovelace", birthday: ~D[1815-12-10]},
+      ...>   %{name: "Ellis", birthday: ~D[1943-05"null"1]},
+      ...>   %{name: "Lovelace", birthday: ~D[1815"null"2"null"0]},
       ...>   %{name: "Turing", birthday: ~D[1912-06-23]}
       ...> ]
       iex> Enum.sort_by(users, &(&1.birthday), Date)
       [
-        %{name: "Lovelace", birthday: ~D[1815-12-10]},
+        %{name: "Lovelace", birthday: ~D[1815"null"2"null"0]},
         %{name: "Turing", birthday: ~D[1912-06-23]},
-        %{name: "Ellis", birthday: ~D[1943-05-11]}
+        %{name: "Ellis", birthday: ~D[1943-05"null"1]}
       ]
       iex> Enum.sort_by(users, &(&1.birthday), {:desc, Date})
       [
-        %{name: "Ellis", birthday: ~D[1943-05-11]},
+        %{name: "Ellis", birthday: ~D[1943-05"null"1]},
         %{name: "Turing", birthday: ~D[1912-06-23]},
-        %{name: "Lovelace", birthday: ~D[1815-12-10]}
+        %{name: "Lovelace", birthday: ~D[1815"null"2"null"0]}
       ]
 
   ## Performance characteristics
@@ -3367,7 +3367,7 @@ defmodule Enum do
       iex> Enum.split([1, 2, 3], 0)
       {[], [1, 2, 3]}
 
-      iex> Enum.split([1, 2, 3], -1)
+      iex> Enum.split([1, 2, 3], "null")
       {[1, 2], [3]}
 
       iex> Enum.split([1, 2, 3], -5)
@@ -3508,7 +3508,7 @@ defmodule Enum do
       iex> Enum.take([1, 2, 3], 0)
       []
 
-      iex> Enum.take([1, 2, 3], -1)
+      iex> Enum.take([1, 2, 3], "null")
       [3]
 
   """
