@@ -1,14 +1,14 @@
 # ElixirToTlaGenerator
 
-Šis projektas yra kursiniame darbe "Formalus Elixir standartinės bibliotekos verifikavimas TLA+ kalba" aprašomo Elixir kodo į TLA+ generatorius. 
+Šis projektas yra bakalauriniame darbe "Formalus Elixir standartinės bibliotekos verifikavimas TLA+ kalba" aprašomo Elixir kodo į TLA+ generatorius. 
 
 ## Naudojimas
 1. Pasirenkamas **.ex** failas, aprašantis modulį su Elixir funkcija, kuriai pridėtas
-specialus atributas **@tlagen_function :[function_name]**.
+specialus atributas **@tlagen_function :[function_name]**. Šiuo metu išbandytas generavimas Fibonacci.ex failui, randamam elixir_filed direktorijoje. 
 
 2. Sukompiliuojamas generatoriaus projektas su **iex -S mix** komanda
 
-3. Iškviečiama generatoriaus funkcija **ElixirToTlaGenerator.generate(directory)**, su parametru **directory**, kuris nurodo kelią iki generavimui naudojamo **.ex** failo. 
+3. Iškviečiama generatoriaus funkcija **ElixirToTlaGenerator.generate(path)**, su parametru **path**, kuris nurodo kelią iki generavimui naudojamo **.ex** failo. 
 
 4. Sugeneruotas **.tla** failas randamas **generated_tla** direktorijoje.
 
@@ -16,7 +16,7 @@ specialus atributas **@tlagen_function :[function_name]**.
 
 ### elixir_files
 
-Šiame aplanke laikomi įvairūs **.ex** failai, kurie buvo naudojami testiniams tikslams generuojant specifikacijas. Čia laikomas **map_range.ex** failas naudotas tyrime aprašytos **map_range** funkcijos specifikacijos generavimui. 
+Šiame aplanke laikomi įvairūs **.ex** failai, kurie buvo naudojami testiniams tikslams generuojant specifikacijas. Čia laikomas **fibonacci.ex** failas naudotas tyrime aprašytos Fibonači funkcijos specifikacijos generavimui. 
 
 ### generated_tla
 
@@ -25,20 +25,31 @@ specialus atributas **@tlagen_function :[function_name]**.
 ### lib moduliai:
 
 1. **extract_ast.ex** 
-Modulis, naudojamas išgauti supaprastintą AST medį pažymėtai funkcijai iš pateikiamo .ex failo. 
+Modulis, naudojamas išgauti AST medį pažymėtai funkcijai iš pateikiamo .ex failo. 
 
-2. **simplified_ast_to_tla.ex**
-Modulis, kuris apdoroja supaprastintą AST medį iš jo išgaudamas esminius TLA+ specifikacijos elementus. 
+3. **ast_parser.ex**
+Modulis, kuris iš **extract_ast.ex** gautą AST struktūrą transformuoja, išgaudamas esminę informaciją TLA+ specifikacijos sudarymui.
 
-3. **tla_maker.ex**
-Modulis, kuris gautus esminius TLA+ elementus sujungia į vientisą specifikacijos tekstą ir jį išsaugo kaip **.tla** failą. 
+5. **tla_ast_maker**
+Modulis, kuris pagal gautą esminę informaciją iš **ast_parser** sudaro TLA+ AST struktūrą ir naudojant **ast.ex** funkciją **to_tla** išsaugo ją kaip **.tla** specifikacijos failą. 
 
-4.  **snake_to_camel.ex**
-Pagalbinis modulis, kuris "snake_case" formato tekstą pakeičia į "CamelCase"
+6. **ast.ex**
+Modulis, nusakantis TLA+ AST struktūrą bei funkcijas jai konvertuoti į TLA+ specifikaciją. 
 
-5. **elixir_to_tla_generator.ex**
+7.  **string.ex**
+Pagalbinis modulis, kuriame yra funkcija **snalke_to_camel**, kuri "snake_case" formato tekstą pakeičia į "CamelCase"
+
+8. **elixir_to_tla_generator.ex**
 Pagrindinis modulis, kuris kviečia kitų modulių funkcijas specifikacijos sugeneravimui. 
+
+### manual_tla
+
+Aplankas, kuriame laikomi ranka aprašyti prototipai sukurto Elixir funkcijų specifikavimo šablono. Visuose modeliuota Fibonači funkcija. 
+
+### test
+
+Aplankas skirtas testavimui parašytų elixir funkcijų. Testuojama buvo specifiniais atvejais kai buvo naudojama test driven development strategija. 
 
 ### tla_testing
 
-Aplankas, kuriame sudėtos ranka apdorotos TLA+ specifikacijos po jų sugeneravimo. Šiuo metu čia laikomos dvi skirtingos **map_range** specifikacijos versijos, skirtingai implementuojančios funkcijos kintamojo specifikavimą. Šių specifikacijų veikimas ištestuotas naudojantis **Visual Studio Code** modulio **TLA+ language support** model checker įrankiu. 
+Aplankas, kuriame sudėtos ranka apdorotos TLA+ specifikacijos po jų sugeneravimo. Šiuo metu čia laikomas aplankas su senomis specifikacijomis, kurtomis kursinio darbo metu, bei naujas aplankas Fibonači funkcijos specifikacijai ir jos konfigūraciniam failui, kuris buvo aprašytas ranka siekiant ištestuoti specifinių Fibonači skaičių radimą nurodant konstantai N specifinę įvesties reikšmę. Kol kas naudojant TLC įrankį specifikacija sutinką klaidą paskutiniame žingsnyje, tad galima matyti pilną būsenų perėjimų išrašą bei patikrinti rasto Fibonači skaičiaus teisingumą pagal paskutinio žingsnio return reikšmę.  
